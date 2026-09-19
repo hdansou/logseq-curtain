@@ -58,6 +58,11 @@ the `cliworker` test graph; harmless, removable whenever.
 - [x] **T3.5** Strip `data-block-title` on spoilered nodes — **scoped down honestly.** It closes one of two channels; the rendered text stays in the DOM because CSS cannot remove it without breaking editing. Leak surface #2 is closed for *fragments* by the storage model, not by this. 5 tests.
 - [x] **T3.6** Node-level `#spoiler` — queries tagged uuids, toggles a class per `blockid`, re-applies on a MutationObserver and on tag-touching DB changes (debounced). No observer loop: `concealBlockTitle` reports no-change once concealed.
 
+## Phase 3c — Spoiling a whole page
+
+- [x] **T3.16** Tagging a page conceals its content, not just its title. Verified against a live graph before wiring: the query goes from 5 uuids to 7, picking up both blocks on the tagged page. `:block/page` covers a page's whole tree at any depth, so no recursion is needed there.
+- [ ] **T3.17** **Known gap:** deeper descendants of a tagged *block* are not concealed — only its direct children. Full descent needs a recursive datalog rule, and rules must be passed as a `%` input, which the plugin bridge serialises as JSON and cannot express. Either walk the subtree in JS from one query of the page's parent edges, or accept and document the limit. Until then a user tagging a parent block may reasonably believe grandchildren are covered when they are not.
+
 ## Phase 3b — Settings and sharing
 
 - [x] **T3.8** Hover-reveal stays on by default — it is the right everyday behaviour — with two ways to stop an accidental reveal: a setting, and a **`Curtain: lock`** palette command that re-conceals everything revealed this session and disables both hover *and* click until unlocked. The lock exists because the need is momentary (about to share a screen) and hunting through plugin settings at that moment is friction in the wrong place. Reveal state is session-only, never written to the graph.

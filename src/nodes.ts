@@ -25,11 +25,23 @@ let observer: MutationObserver | null = null
 const hostDocument = (): Document | null => (window.parent as Window | undefined)?.document ?? null
 
 async function fetchSpoileredUuids(): Promise<Set<string>> {
+  // Tagging a page must conceal what is written on it, not just its title.
+  // Every block on a page carries `:block/page`, so that one clause covers the
+  // page's whole tree however deeply nested — no recursion needed.
+  //
+  // `:block/parent` adds the direct children of a tagged *block*. Deeper
+  // descendants of a tagged block are NOT covered: that needs a recursive rule,
+  // and rules must be passed as a `%` input, which the plugin bridge
+  // serialises as JSON and cannot express. See TASKS T3.16.
   const rows = (await logseq.DB.datascriptQuery(
     `[:find ?uuid
       :where
-      [?b :block/tags ?t]
-      [?t :block/title "spoiler"]
+      [?tag :block/title "spoiler"]
+      [?tagged :block/tags ?tag]
+      (or-join [?b ?tagged]
+        [(identity ?tagged) ?b]
+        [?b :block/page ?tagged]
+        [?b :block/parent ?tagged])
       [?b :block/uuid ?uuid]]`,
   )) as unknown[]
   const uuids = (rows ?? [])
