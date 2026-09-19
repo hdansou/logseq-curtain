@@ -16,7 +16,7 @@ import { isLocked, revealOnHover, setLocked } from './settings'
  */
 const SPOILER_CLASS = 'curtain-node-concealed'
 const REVEALED_CLASS = 'curtain-node-revealed'
-const STYLE_KEY = 'curtain-nodes'
+const HOVER_CLASS = 'curtain-hover-reveal'
 
 let spoilered = new Set<string>()
 /** Session-only: a reveal lasts until reload, never persisted to the graph. */
@@ -90,6 +90,11 @@ function applyToDocument(): void {
     const shouldConceal = uuid !== null && spoilered.has(uuid)
     element.classList.toggle(SPOILER_CLASS, shouldConceal)
     element.classList.toggle(REVEALED_CLASS, uuid !== null && revealed.has(uuid))
+    // Hover-reveal is gated by a class rather than by rewriting the CSS.
+    // `provideStyle` takes a style string and does not replace a previous one
+    // by key, so re-providing left the old rule in the cascade and the setting
+    // appeared to do nothing whichever way it was set.
+    element.classList.toggle(HOVER_CLASS, shouldConceal && revealOnHover())
     // Defence in depth only — see the note above. Closes the attribute
     // channel; the rendered text remains readable in the DOM.
     if (shouldConceal) concealBlockTitle(element, CONCEALED_TITLE)
@@ -102,35 +107,32 @@ async function refresh(): Promise<void> {
 }
 
 /**
- * Hover-reveal is on by default and suppressed while locked.
+ * Provided once, and never rewritten.
  *
- * Unconditional hover-reveal defeated the point at the one moment it mattered:
- * a stray mouse-over during a screen share. Rather than making the everyday
- * case worse, the lock turns it off for as long as it is needed.
+ * Hover-reveal is expressed as a rule gated on a class, not by re-providing
+ * CSS with the rule added or removed: `provideStyle` takes a style string and
+ * does not replace an earlier one, so rewriting only ever appended, leaving
+ * the old rule live. Whether hover reveals is decided per element in
+ * `applyToDocument`, which the observer already runs.
  */
 function paintStyle(): void {
-  const hoverRule = revealOnHover() ? `.${SPOILER_CLASS} .block-content:hover,` : ''
-  logseq.provideStyle({
-    key: STYLE_KEY,
-    style: `
-      .${SPOILER_CLASS} .block-content {
-        filter: blur(5px);
-        transition: filter 120ms ease-in-out;
-        cursor: pointer;
-      }
-      ${hoverRule}
-      .${SPOILER_CLASS}.${REVEALED_CLASS} .block-content {
-        filter: none;
-      }
-    `,
-  })
+  logseq.provideStyle(`
+    .${SPOILER_CLASS} .block-content {
+      filter: blur(5px);
+      transition: filter 120ms ease-in-out;
+      cursor: pointer;
+    }
+    .${SPOILER_CLASS}.${HOVER_CLASS} .block-content:hover,
+    .${SPOILER_CLASS}.${REVEALED_CLASS} .block-content {
+      filter: none;
+    }
+  `)
 }
 
 /** Re-conceal everything and stop hover working, in one action. */
 function setLockedAndRepaint(value: boolean): void {
   setLocked(value)
   if (value) revealed.clear()
-  paintStyle()
   applyToDocument()
   logseq.UI.showMsg(
     value ? 'Curtain: locked — nothing reveals until unlocked' : 'Curtain: unlocked',
@@ -140,7 +142,8 @@ function setLockedAndRepaint(value: boolean): void {
 
 export async function registerNodeConcealment(): Promise<void> {
   paintStyle()
-  logseq.onSettingsChanged(() => paintStyle())
+  // The setting changes which elements carry the hover class, not the CSS.
+  logseq.onSettingsChanged(() => applyToDocument())
 
   logseq.App.registerCommandPalette(
     { key: 'curtain-lock', label: 'Curtain: lock (re-conceal everything, disable hover)' },
