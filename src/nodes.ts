@@ -1,4 +1,5 @@
 import { CONCEALED_TITLE, concealBlockTitle } from './conceal'
+import { expandDescendants } from './descendants'
 import { isLocked, revealOnHover, setLocked } from './settings'
 
 /**
@@ -29,10 +30,10 @@ async function fetchSpoileredUuids(): Promise<Set<string>> {
   // Every block on a page carries `:block/page`, so that one clause covers the
   // page's whole tree however deeply nested — no recursion needed.
   //
-  // `:block/parent` adds the direct children of a tagged *block*. Deeper
-  // descendants of a tagged block are NOT covered: that needs a recursive rule,
-  // and rules must be passed as a `%` input, which the plugin bridge
-  // serialises as JSON and cannot express. See TASKS T3.16.
+  // A tagged *block* needs its whole subtree, which a single `:block/parent`
+  // clause does not give. Rules would, but they must be passed as a `%` input
+  // and the bridge serialises inputs as JSON, which cannot express the symbols
+  // a rule is made of — so the descent is finished in `expandDescendants`.
   const rows = (await logseq.DB.datascriptQuery(
     `[:find ?uuid
       :where
@@ -40,14 +41,44 @@ async function fetchSpoileredUuids(): Promise<Set<string>> {
       [?tagged :block/tags ?tag]
       (or-join [?b ?tagged]
         [(identity ?tagged) ?b]
-        [?b :block/page ?tagged]
-        [?b :block/parent ?tagged])
+        [?b :block/page ?tagged])
       [?b :block/uuid ?uuid]]`,
   )) as unknown[]
-  const uuids = (rows ?? [])
-    .map((row) => (Array.isArray(row) ? row[0] : row))
-    .filter((value): value is string => typeof value === 'string')
-  return new Set(uuids)
+  const seeds = new Set(
+    (rows ?? [])
+      .map((row) => (Array.isArray(row) ? row[0] : row))
+      .filter((value): value is string => typeof value === 'string'),
+  )
+
+  return expandDescendants(seeds, await fetchParentEdges())
+}
+
+/**
+ * Child → parent for the pages that contain a tagged block.
+ *
+ * Scoped to those pages rather than the whole graph: a tagged block's subtree
+ * cannot leave the page it is on.
+ */
+async function fetchParentEdges(): Promise<Map<string, string>> {
+  const rows = (await logseq.DB.datascriptQuery(
+    `[:find ?child ?parent
+      :where
+      [?tag :block/title "spoiler"]
+      [?tagged :block/tags ?tag]
+      [?tagged :block/page ?pg]
+      [?b :block/page ?pg]
+      [?b :block/parent ?p]
+      [?b :block/uuid ?child]
+      [?p :block/uuid ?parent]]`,
+  )) as unknown[]
+
+  const edges = new Map<string, string>()
+  for (const row of rows ?? []) {
+    if (!Array.isArray(row)) continue
+    const [child, parent] = row
+    if (typeof child === 'string' && typeof parent === 'string') edges.set(child, parent)
+  }
+  return edges
 }
 
 function applyToDocument(): void {

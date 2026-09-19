@@ -61,7 +61,7 @@ the `cliworker` test graph; harmless, removable whenever.
 ## Phase 3c — Spoiling a whole page
 
 - [x] **T3.16** Tagging a page conceals its content, not just its title. Verified against a live graph before wiring: the query goes from 5 uuids to 7, picking up both blocks on the tagged page. `:block/page` covers a page's whole tree at any depth, so no recursion is needed there.
-- [ ] **T3.17** **Known gap:** deeper descendants of a tagged *block* are not concealed — only its direct children. Full descent needs a recursive datalog rule, and rules must be passed as a `%` input, which the plugin bridge serialises as JSON and cannot express. Either walk the subtree in JS from one query of the page's parent edges, or accept and document the limit. Until then a user tagging a parent block may reasonably believe grandchildren are covered when they are not.
+- [x] **T3.17** Deeper descendants of a tagged block are concealed. Rules remain unusable through the bridge — inputs serialise as JSON, which cannot express a rule's symbols — so the descent is finished in JS over the parent edges of the pages holding a tagged block, a bounded set rather than the whole graph. The walk climbs from each node to the first seed, so one pass answers for every node and the result does not depend on query order; a `seen` set bounds it against malformed data. 10 tests.
 
 ## Phase 3b — Settings and sharing
 
