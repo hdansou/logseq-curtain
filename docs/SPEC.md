@@ -194,10 +194,16 @@ A remembered selection is discarded when:
 | 1 | Its block is not the block being edited | the user moved on |
 | 2 | `content.slice(start, end) !== text` | the user edited; offsets no longer mean what they meant |
 | 3 | Older than the staleness window | a selection from minutes ago is not an intent |
-| 4 | It has already been used | never conceal the same range twice |
+| 4 | It has already been used | *enforced by construction* — `consume()` always clears, usable or not, so a used selection cannot exist to be checked |
 
 Rule 2 is the load-bearing one: it catches every edit without needing to
 observe the edit, because it re-derives the truth from current content.
+
+Two subtleties the implementation has to respect. Bounds are checked *before*
+slicing, because `slice()` truncates silently rather than throwing — an `end`
+past the content length would otherwise satisfy rule 2 by accident. And
+`consume()` clears even when it rejects, so a selection that failed in one
+context cannot linger and be reconsidered in another.
 
 ### Entry points
 
