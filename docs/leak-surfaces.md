@@ -12,7 +12,7 @@ The scope decision was **full sweep**, which means every missed surface fails *s
 |---|---|---|---|---|---|
 | 1 | Rendered block text | renderer | safe | safe | `E2E-01` |
 | 2 | `data-block-title` attribute | `components/block.cljs:4478` | **LEAKS** | safe *(fragments)* / **LEAKS** *(nodes)* | `E2E-02` |
-| 3 | Search index | `worker/search.cljs:614` | **LEAKS** | safe | `E2E-03` |
+| 3 | Search index | `worker/search.cljs:614` | **LEAKS** | safe — **verified live** | `E2E-03` ✅ |
 | 4 | Search results UI (cmdk) | `components/cmdk/list_item.cljs:84-97` | **LEAKS** | safe | `E2E-04` |
 | 5 | Graph view node labels | `worker/graph_view.cljs` | **LEAKS** | safe | `E2E-05` |
 | 6 | Breadcrumbs | `components/block.cljs:3766+` | **LEAKS** | safe | `E2E-06` |
@@ -30,6 +30,10 @@ The scope decision was **full sweep**, which means every missed surface fails *s
 **Rows 11–12 are artifact 3.** Unreachable from the app: no plugin runtime exists in the CLI (`frontend/config.cljs:149-152`).
 
 **Rows 13–14 are documented non-goals.** Concealment, not confidentiality.
+
+## Verified so far
+
+**E2E-03 passes.** Against `cliworker` with three concealed fragments: searching the concealed payload text (`"this content is hidden from the human"`, `"humans and robots"`) returns nothing, while the surrounding visible text in the same block is still found. The storage model does what it was designed to do.
 
 ## Test shape
 
