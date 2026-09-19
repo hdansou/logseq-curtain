@@ -119,15 +119,31 @@ describe('parseMacroArguments', () => {
   // host hands over already-split pieces rather than the raw macro text.
   it('reads the host-split argument form', () => {
     expect(parseMacroArguments([':curtain', 'k7', 'spoiler norobots'])).toEqual({
-      key: 'k7',
+      reference: 'k7',
       audience: parseFlags('spoiler norobots'),
     })
   })
 
   it('tolerates the whitespace mldoc leaves around arguments', () => {
     expect(parseMacroArguments([' :curtain ', ' k7 ', ' spoiler '])).toEqual({
-      key: 'k7',
+      reference: 'k7',
       audience: parseFlags('spoiler'),
+    })
+  })
+
+  // In inline mode the reference IS the text, and mldoc splits it on every
+  // comma. Flags are always last, so the middle arguments rejoin into the text.
+  it('rejoins inline text that mldoc split on commas', () => {
+    expect(parseMacroArguments([':curtain', 'one', 'two', 'spoiler'])).toEqual({
+      reference: 'one, two',
+      audience: parseFlags('spoiler'),
+    })
+  })
+
+  it('reads inline text with no commas', () => {
+    expect(parseMacroArguments([':curtain', 'humans and robots', 'spoiler norobots'])).toEqual({
+      reference: 'humans and robots',
+      audience: parseFlags('spoiler norobots'),
     })
   })
 

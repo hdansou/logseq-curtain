@@ -1,6 +1,18 @@
 import type { SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin.user'
 
+export type StorageMode = 'property' | 'inline'
+
 export const SETTINGS: SettingSchemaDesc[] = [
+  {
+    key: 'storageMode',
+    type: 'enum',
+    enumChoices: ['property', 'inline'],
+    enumPicker: 'radio',
+    title: 'Where new concealed text is stored',
+    description:
+      'property — the text lives in a hidden property and the macro holds a short id. Strongest: the text is not in the block title, so it stays out of search, exports and the graph view. inline — the text lives in the macro itself. Readable and editable in place, and it copies natively, but it IS in the block title, so search and exports can see it. Commas are normalised in this mode.',
+    default: 'property',
+  },
   {
     key: 'revealNodesOnHover',
     type: 'boolean',
@@ -10,6 +22,9 @@ export const SETTINGS: SettingSchemaDesc[] = [
     default: true,
   },
 ]
+
+export const storageMode = (): StorageMode =>
+  logseq.settings?.storageMode === 'inline' ? 'inline' : 'property'
 
 /**
  * Session lock, set by the "Curtain: lock" command.

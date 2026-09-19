@@ -1,4 +1,3 @@
-import { extractInlineFragments } from './inline'
 import {
   PAYLOAD_PROPERTY_NAME,
   collectPayloads,
@@ -41,16 +40,14 @@ export async function writePayloads(blockUuid: string, payloads: PayloadMap): Pr
 }
 
 /**
- * Bring a block back into its canonical shape: keys in the macro, text in the
- * property.
+ * Drop payloads this block no longer references.
  *
- * Two things can leave it otherwise. Un-concealing puts text inline so it can
- * be edited in place, and that text must move back out once the user is done.
- * Undo and ordinary editing remove a macro, orphaning the payload it used.
+ * Deliberately does NOT convert inline text back to a key. Inline is a storage
+ * mode the user chose, not a transient state to be tidied away; an earlier
+ * version re-keyed it automatically and simply fought whoever was editing.
+ * Switching modes is an explicit command.
  *
- * Skips the block being edited. Rewriting a block under the cursor moves it,
- * which is worse than waiting — and the text inline is exactly what the user
- * asked to see while editing.
+ * Skips the block being edited, so nothing is rewritten under the cursor.
  *
  * Returns whether anything was written. Writing is itself a database change,
  * so reporting "nothing to do" is what stops this retriggering itself.
@@ -64,14 +61,6 @@ export async function reconcileBlock(blockUuid: string): Promise<boolean> {
 
   const title = (block as { title?: string }).title ?? ''
   const payloads = parsePayloads(readRawPayload(block))
-
-  // Text typed in place goes back to the property first.
-  const extracted = extractInlineFragments(title, payloads)
-  if (extracted.changed) {
-    await writePayloads(blockUuid, extracted.payloads)
-    await logseq.Editor.updateBlock(blockUuid, extracted.title)
-    return true
-  }
 
   if (Object.keys(payloads).length === 0) return false
   const kept = collectPayloads(title, payloads)

@@ -1,10 +1,11 @@
 import { FLAG_NAMES, parseFlags, type Audience } from './flags'
 import { formatMacro, spliceMacro, stripSlashTrigger } from './macro'
 import { collectPayloads, newKey, putPayload, revealFragments } from './payloads'
-import { inlineFragments } from './inline'
+import { extractInlineFragments, inlineFragments } from './inline'
 import { createSelectionMemory } from './selection'
 import { readBlockText, readPayloads, writePayloads } from './store'
 import { applyTags } from './tags'
+import { storageMode } from './settings'
 
 /**
  * Entry points are split by *target*, not by context, because of a host
@@ -68,6 +69,16 @@ async function concealFragment(audience: Audience): Promise<void> {
     return
   }
 
+  if (storageMode() === 'inline') {
+    // The text stays in the macro. Nothing to store, so nothing can be
+    // orphaned — but the text is in the block title and visible to search.
+    await logseq.Editor.updateBlock(
+      blockUuid,
+      spliceMacro(content, selection.start, selection.end, formatMacro(selection.text, audience)),
+    )
+    return
+  }
+
   const payloads = await readPayloads(blockUuid)
   const key = newKey(payloads)
   // Store before editing the block: if the write fails, the text is still
@@ -121,33 +132,38 @@ async function tagPage(pageName: string, audience: Audience): Promise<void> {
 }
 
 /**
- * Show the concealed text inside its own macro, so it can be edited in place.
+ * Move a block's fragments between storage modes.
  *
- * The macro stays. Removing it would mean re-selecting the text and running a
- * command again to put the curtain back; this way editing is just editing, and
- * the text moves back into the property on its own once the block is left.
- *
- * Writes the title *before* dropping the payloads — the reverse of concealing,
- * and for the same reason. If the second step fails the text still exists
- * somewhere. The other order loses it outright when the block write fails.
+ * Both directions write the destination before clearing the source, so a
+ * failure on the second step leaves the text in both places rather than
+ * neither.
  */
-async function unconceal(): Promise<void> {
+async function convertStorage(to: 'inline' | 'property'): Promise<void> {
   const uuids = await targetBlocks()
   let changed = 0
 
   for (const uuid of uuids) {
     const current = await readBlockText(uuid)
     if (current === null) continue
-    const inlined = inlineFragments(current.title, current.payloads)
-    if (inlined === current.title) continue
 
-    await logseq.Editor.updateBlock(uuid, inlined)
-    await writePayloads(uuid, collectPayloads(inlined, current.payloads))
+    if (to === 'inline') {
+      const inlined = inlineFragments(current.title, current.payloads)
+      if (inlined === current.title) continue
+      await logseq.Editor.updateBlock(uuid, inlined)
+      await writePayloads(uuid, collectPayloads(inlined, current.payloads))
+    } else {
+      const extracted = extractInlineFragments(current.title, current.payloads)
+      if (!extracted.changed) continue
+      await writePayloads(uuid, extracted.payloads)
+      await logseq.Editor.updateBlock(uuid, extracted.title)
+    }
     changed += 1
   }
 
   logseq.UI.showMsg(
-    changed === 0 ? 'Curtain: nothing concealed here' : `Curtain: ${changed} block(s) open for editing`,
+    changed === 0
+      ? `Curtain: nothing to move ${to === 'inline' ? 'into the macro' : 'into a property'}`
+      : `Curtain: moved ${changed} block(s) ${to === 'inline' ? 'into the macro' : 'into a property'}`,
     changed === 0 ? 'warning' : 'success',
   )
 }
@@ -197,8 +213,12 @@ export function registerCommands(): void {
   })
 
   logseq.App.registerCommandPalette(
-    { key: 'curtain-unconceal', label: 'Curtain: edit concealed text in place' },
-    () => unconceal(),
+    { key: 'curtain-to-inline', label: 'Curtain: store concealed text in the macro (editable)' },
+    () => convertStorage('inline'),
+  )
+  logseq.App.registerCommandPalette(
+    { key: 'curtain-to-property', label: 'Curtain: store concealed text as a property (hidden)' },
+    () => convertStorage('property'),
   )
   logseq.App.registerCommandPalette(
     { key: 'curtain-copy-revealed', label: 'Curtain: copy with concealed text' },

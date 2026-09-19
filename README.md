@@ -37,6 +37,16 @@ Curtain ships **no default keyboard shortcuts** — any chord risks colliding
 with Logseq, another plugin, or the OS. Assign your own under
 **Settings → Keymap → Plugins**.
 
+## Two storage modes
+
+| Mode | Macro | Text lives in | Trade |
+|---|---|---|---|
+| `property` *(default)* | `{{renderer :curtain, ur, spoiler}}` | a hidden property | Strongest — the text is not in the block title, so search, exports and the graph view never see it |
+| `inline` | `{{renderer :curtain, humans and robots, spoiler}}` | the macro itself | Editable in place, copies natively — but the text *is* in the block title, so search and exports can see it. Commas normalise |
+
+Set the default in plugin settings. Two palette commands convert existing
+fragments either way, so a mode choice is never permanent.
+
 ## What Curtain is not
 
 Curtain is **concealment, not confidentiality.** It filters read paths; it does not encrypt anything. The payload sits in plaintext in SQLite, in db-sync payloads and in EDN exports, so anyone holding the graph file holds the content.

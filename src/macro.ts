@@ -61,14 +61,25 @@ export function stripSlashTrigger(content: string, trigger: string): string {
  * mldoc comma-splits macro arguments before the host calls the renderer, so
  * `{{renderer :curtain, k7, spoiler norobots}}` arrives as
  * `[':curtain', 'k7', 'spoiler norobots']` rather than as raw text.
+ *
+ * The middle is a *reference*: a payload key in keyed mode, or the concealed
+ * text itself in inline mode. Inline text containing commas arrives as several
+ * arguments, so the middle is rejoined. Note that rejoin normalises `a,b` to
+ * `a, b` — the documented cost of inline mode.
  */
 export function parseMacroArguments(
   args: readonly string[],
-): { key: string; audience: Audience } | null {
-  const [name, key, flags] = args.map((argument) => argument.trim())
-  if (name !== `:${RENDERER_NAME}`) return null
-  if (!key || flags === undefined) return null
-  return { key, audience: parseFlags(flags) }
+): { reference: string; audience: Audience } | null {
+  const parts = args.map((argument) => argument.trim())
+  if (parts[0] !== `:${RENDERER_NAME}` || parts.length < 3) return null
+
+  // Flags are always last. Everything between the name and the flags is the
+  // reference — a key in keyed mode, or the text itself in inline mode, which
+  // mldoc will have split on every comma it contains.
+  const flags = parts[parts.length - 1]
+  const reference = parts.slice(1, -1).join(', ')
+  if (reference === '') return null
+  return { reference, audience: parseFlags(flags) }
 }
 
 /**

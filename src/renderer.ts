@@ -11,7 +11,7 @@ import { readPayloads } from './store'
  * slot. `provideUI` is keyed on slot for the same reason — keying on the
  * block uuid renders the fragment into every slot that shares it.
  */
-type SlotContext = { blockUuid: string; key: string; audience: Audience }
+type SlotContext = { blockUuid: string; reference: string; audience: Audience }
 
 const contexts = new Map<string, SlotContext>()
 const revealed = new Set<string>()
@@ -24,19 +24,17 @@ async function paint(slot: string): Promise<void> {
   if (context === undefined) return
 
   const payloads = await readPayloads(context.blockUuid)
-  const text = payloads[context.key]
 
-  // A macro whose payload is gone must say so rather than render blank: a
-  // silent empty span looks like a working curtain hiding nothing.
-  const template =
-    text === undefined
-      ? `<span class="curtain curtain--broken" title="No payload stored for key ${context.key}">[curtain: missing payload]</span>`
-      : renderCurtain({
-          slot,
-          key: context.key,
-          concealed: !revealed.has(slot) && concealedByDefault(context.audience),
-          text,
-        })
+  // The reference is a payload key in keyed mode, or the concealed text itself
+  // in inline mode. A key that resolves wins; anything else is literal text.
+  const text = payloads[context.reference] ?? context.reference
+
+  const template = renderCurtain({
+    slot,
+    key: context.reference,
+    concealed: !revealed.has(slot) && concealedByDefault(context.audience),
+    text,
+  })
 
   logseq.provideUI({ key: `curtain-${slot}`, slot, template })
 }
@@ -77,7 +75,11 @@ export function registerRenderer(): void {
   logseq.App.onMacroRendererSlotted(async ({ slot, payload }) => {
     const parsed = parseMacroArguments(payload.arguments ?? [])
     if (parsed === null) return
-    contexts.set(slot, { blockUuid: payload.uuid, key: parsed.key, audience: parsed.audience })
+    contexts.set(slot, {
+      blockUuid: payload.uuid,
+      reference: parsed.reference,
+      audience: parsed.audience,
+    })
     await paint(slot)
   })
 }
