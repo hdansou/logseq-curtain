@@ -1,7 +1,7 @@
 {
   "name": "logseq-curtain",
-  "version": "0.0.1",
-  "description": "Conceal graph content from humans, from agents, or both.",
+  "version": "1.0.0",
+  "description": "Conceal parts of a Logseq DB graph from human eyes, from AI agents, or from both.",
   "main": "dist/index.html",
   "scripts": {
     "dev": "vite build --watch",
@@ -11,6 +11,7 @@
   "logseq": {
     "id": "logseq-curtain",
     "title": "Curtain",
+    "icon": "./icon.png",
     "main": "dist/index.html"
   },
   "dependencies": {
@@ -21,5 +22,20 @@
     "vite": "^5.4.0",
     "vite-plugin-logseq": "^1.1.2",
     "vitest": "^2.1.0"
-  }
+  },
+  "author": "Danzu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hdansou/logseq-curtain"
+  },
+  "keywords": [
+    "logseq",
+    "logseq-plugin",
+    "privacy",
+    "spoiler",
+    "ai",
+    "agents",
+    "concealment"
+  ]
 }

@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The build is not the gate; these are. A release that ships a failing
+      # type check or a red suite is worse than a late one.
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm test
+      - run: pnpm build
+
+      # Everything the plugin needs at runtime, and nothing else.
+      - name: Package
+        run: |
+          mkdir -p release/logseq-curtain
+          cp -r dist icon.png package.json README.md NOROBOTS.md LICENSE release/logseq-curtain/
+          cd release && zip -r ../logseq-curtain.zip logseq-curtain
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: logseq-curtain.zip
+          generate_release_notes: true

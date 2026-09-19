@@ -1,5 +1,12 @@
 # Curtain — Tasks
 
+## Release 1.0.0
+
+- [x] Icon — five candidates in `assets/icons/`, chosen on how they read at 28px rather than at 128px, since that is what a plugin list renders. C ships as `icon.png`.
+- [x] Marketplace metadata, MIT licence, `CHANGELOG.md`.
+- [x] Release workflow — tag `v*` builds, but typecheck and tests gate it: shipping a red suite is worse than shipping late.
+- [x] Temporary diagnose command removed.
+
 Vocabulary first: every other artifact encodes it, so changing it later means
 changing it in four places. Each task carries a note when it completes —
 what was done, and anything learned that changes later work.

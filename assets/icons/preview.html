@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Curtain icon candidates</title>
+<style>
+  :root { font-family: ui-sans-serif, -apple-system, system-ui, sans-serif; }
+  body { margin: 0; padding: 40px; background: #fafaf8; color: #22242a; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 32px; color: #6b7280; font-size: 14px; }
+  .row { display: grid; grid-template-columns: 150px 1fr 1fr; gap: 20px; align-items: center;
+         padding: 20px 0; border-top: 1px solid #e5e7eb; }
+  .name { font-size: 14px; font-weight: 600; }
+  .name small { display: block; font-weight: 400; color: #6b7280; margin-top: 4px; line-height: 1.4; }
+  .swatch { display: flex; gap: 20px; align-items: center; padding: 16px 20px; border-radius: 12px; }
+  .light { background: #ffffff; border: 1px solid #e5e7eb; }
+  .dark  { background: #14161a; }
+  .swatch img { display: block; }
+  .s128 { width: 96px; height: 96px; }
+  .s48  { width: 48px; height: 48px; }
+  .s28  { width: 28px; height: 28px; }
+  .cap { font-size: 11px; color: #9ca3af; margin-bottom: 8px; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #0f1115; color: #e5e7eb; }
+    .light { background: #fff; }
+    .row { border-color: #262a33; }
+  }
+</style>
+</head>
+<body>
+<h1>Curtain — icon candidates</h1>
+<p class="sub">Judge them at 28px: that is roughly how a plugin list renders an icon. Anything that only works at 96px is the wrong choice.</p>
+
+<div class="row" style="border:0">
+  <div></div>
+  <div class="cap">on light</div>
+  <div class="cap">on dark</div>
+</div>
+
+<div id="rows"></div>
+
+<script>
+const icons = [
+  ["a-theatre",     "A — Theatre curtain",  "Reads as 'curtain' instantly. Busiest of the set; the dots may close up when small."],
+  ["b-over-text",   "B — Drawn over text",  "Shows what it does: a line of notes with one span concealed. Most literal."],
+  ["c-chip",        "C — The mark itself",  "Exactly what a concealed fragment looks like in the app. Simplest; least evocative of the name."],
+  ["d-half-drawn",  "D — Half drawn",       "Both states at once: text on one side, curtain closing over it. Most narrative."],
+  ["e-veiled-eye",  "E — Veiled eye",       "Concealment from a viewer rather than a stage. Risks reading as 'privacy/eye' generally."],
+];
+document.getElementById("rows").innerHTML = icons.map(([file, name, note]) => `
+  <div class="row">
+    <div class="name">${name}<small>${note}</small></div>
+    <div class="swatch light">
+      <img class="s128" src="${file}.svg" alt=""><img class="s48" src="${file}.svg" alt=""><img class="s28" src="${file}.svg" alt="">
+    </div>
+    <div class="swatch dark">
+      <img class="s128" src="${file}.svg" alt=""><img class="s48" src="${file}.svg" alt=""><img class="s28" src="${file}.svg" alt="">
+    </div>
+  </div>`).join("");
+</script>
+</body>
+</html>

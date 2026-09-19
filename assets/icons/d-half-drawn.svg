@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Curtain">
+  <rect width="128" height="128" rx="28" fill="#f4f1ea"/>
+  <rect x="24" y="40" width="34" height="8" rx="4" fill="#2f3542"/>
+  <rect x="24" y="60" width="30" height="8" rx="4" fill="#2f3542"/>
+  <rect x="24" y="80" width="34" height="8" rx="4" fill="#2f3542"/>
+  <path d="M66 22h38a0 0 0 010 0v84a0 0 0 010 0H66c14-14 14-70 0-84z" fill="#c23a4b"/>
+  <path d="M104 22c-9 14-9 70 0 84z" fill="#9c2b39"/>
+  <rect x="60" y="18" width="50" height="7" rx="3.5" fill="#f0b44a"/>
+</svg>
