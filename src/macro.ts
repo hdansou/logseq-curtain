@@ -102,7 +102,7 @@ export function findMacroKeys(title: string): string[] {
  * shared instance would skip matches on its second use.
  */
 export const macroBodyPattern = (): RegExp =>
-  new RegExp(`\\{\\{renderer\\s+:${RENDERER_NAME}\\s*,([^}]*)\\}\\}`, 'g')
+  new RegExp(`\\{\\{renderer\\s+:${RENDERER_NAME}\\s*,(.*?)\\}\\}`, 'gs')
 
 /**
  * Split a macro body into its reference and its trailing flags.

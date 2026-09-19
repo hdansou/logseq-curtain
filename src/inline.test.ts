@@ -68,3 +68,25 @@ describe('extractInlineFragments', () => {
     expect(Object.values(result.payloads).sort()).toEqual(['first', 'second'])
   })
 })
+
+describe('braces in concealed text', () => {
+  // Same root cause as the norobots filter bypass: the body was matched with
+  // [^}]*, so one brace ended the class and the macro stopped matching.
+  it('inlines text containing braces', () => {
+    expect(inlineFragments('{{renderer :curtain, k7, spoiler}}', { k7: 'the {answer}' })).toBe(
+      '{{renderer :curtain, the {answer}, spoiler}}',
+    )
+  })
+
+  it('extracts inline text containing braces', () => {
+    const result = extractInlineFragments('{{renderer :curtain, {"k":"v"}, spoiler}}', {})
+    expect(Object.values(result.payloads)).toEqual(['{"k":"v"}'])
+  })
+
+  it('round-trips a JSON-shaped payload', () => {
+    const extracted = extractInlineFragments('{{renderer :curtain, {"a":1}, norobots}}', {})
+    expect(inlineFragments(extracted.title, extracted.payloads)).toBe(
+      '{{renderer :curtain, {"a":1}, norobots}}',
+    )
+  })
+})
