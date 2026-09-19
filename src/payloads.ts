@@ -1,0 +1,110 @@
+/**
+ * The payload store: concealed text, keyed, kept out of `:block/title`.
+ *
+ * A block's payloads live in one hidden plugin property as a JSON map, so N
+ * fragments cost one property. The block's title holds only the macro and its
+ * key, which is what keeps the text out of `data-block-title`, the search
+ * index, graph labels, breadcrumbs and every text export.
+ *
+ * Flags are deliberately NOT stored here. They belong in the macro, where the
+ * user can read and edit them in raw text; a bare `{{renderer :curtain, k7}}`
+ * would otherwise be unreadable without revealing it.
+ */
+export type PayloadMap = Record<string, string>
+
+const corrupt = (why: string): never => {
+  throw new Error(`Corrupt Curtain payload: ${why}`)
+}
+
+/**
+ * Read a block's payload map.
+ *
+ * A block with no payload property is legitimately empty. Anything present
+ * but unreadable throws: silently reading a corrupted payload as empty would
+ * render concealed-but-blank and lose the user's text with no signal.
+ */
+export function parsePayloads(raw: string | undefined): PayloadMap {
+  if (raw === undefined || raw.trim() === '') return {}
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch (error) {
+    return corrupt(`not valid JSON (${(error as Error).message})`)
+  }
+
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return corrupt('expected an object mapping key to text')
+  }
+  for (const [key, value] of Object.entries(parsed)) {
+    if (typeof value !== 'string') return corrupt(`value for "${key}" is not text`)
+  }
+  return { ...(parsed as PayloadMap) }
+}
+
+export function serialisePayloads(payloads: PayloadMap): string {
+  return JSON.stringify(payloads)
+}
+
+/** Add or replace one payload. Returns a new map; the input is untouched. */
+export function putPayload(payloads: PayloadMap, key: string, text: string): PayloadMap {
+  return { ...payloads, [key]: text }
+}
+
+/** Drop one payload. Returns a new map; the input is untouched. */
+export function removePayload(payloads: PayloadMap, key: string): PayloadMap {
+  const next = { ...payloads }
+  delete next[key]
+  return next
+}
+
+const KEY_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
+const MIN_KEY_LENGTH = 2
+const MAX_KEY_LENGTH = 6
+const ATTEMPTS_PER_LENGTH = 64
+
+const randomKey = (length: number): string =>
+  Array.from({ length }, () => KEY_ALPHABET[Math.floor(Math.random() * KEY_ALPHABET.length)]).join('')
+
+/**
+ * Allocate a key unused within this block.
+ *
+ * Keys only need to be unique inside one block's map, never graph-wide, so
+ * they stay short enough to read in raw text. Length grows if a crowded block
+ * keeps colliding.
+ */
+export function newKey(existing: PayloadMap): string {
+  for (let length = MIN_KEY_LENGTH; length <= MAX_KEY_LENGTH; length += 1) {
+    for (let attempt = 0; attempt < ATTEMPTS_PER_LENGTH; attempt += 1) {
+      const key = randomKey(length)
+      if (!(key in existing)) return key
+    }
+  }
+  throw new Error('Could not allocate a Curtain payload key')
+}
+
+/** The plugin id is not sanitised, so the ident keeps its hyphens (T2.1). */
+export const PAYLOAD_PROPERTY_NAME = 'payloads'
+export const PAYLOAD_PROPERTY_IDENT = `plugin.property.logseq-curtain/${PAYLOAD_PROPERTY_NAME}`
+
+/**
+ * Pull the raw payload property off a block, whatever shape the host hands back.
+ *
+ * Key spellings from the host cannot be assumed: the T2.1 probe pulled
+ * `:db/ident` and found it under neither `db/ident` nor `:db/ident`, while the
+ * CLI showed it present. Every known shape is tried here, once, rather than at
+ * each call site.
+ */
+export function readRawPayload(block: unknown): string | undefined {
+  if (block === null || typeof block !== 'object') return undefined
+  const record = block as Record<string, unknown>
+  const nested = record.properties as Record<string, unknown> | undefined
+
+  const candidates = [
+    record[PAYLOAD_PROPERTY_IDENT],
+    record[`:${PAYLOAD_PROPERTY_IDENT}`],
+    nested?.[PAYLOAD_PROPERTY_IDENT],
+    nested?.[`:${PAYLOAD_PROPERTY_IDENT}`],
+  ]
+  return candidates.find((value): value is string => typeof value === 'string')
+}

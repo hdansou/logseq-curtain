@@ -1,13 +1,11 @@
 import '@logseq/libs'
+import { ensurePayloadProperty } from './store'
 
 /**
- * Curtain entry point.
- *
- * Deliberately inert: the host probes that lived here have served their
- * purpose and been removed (see docs/t0-findings.md). Phase 3 registers the
- * `:curtain` renderer and the payload store here.
+ * Curtain entry point. Phase 3 registers the `:curtain` renderer here.
  */
 async function main(): Promise<void> {
+  await ensurePayloadProperty()
   console.log('[curtain] ready')
 }
 
