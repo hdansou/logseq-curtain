@@ -1,6 +1,7 @@
 import { FLAG_NAMES, parseFlags, type Audience } from './flags'
 import { formatMacro, spliceMacro, stripSlashTrigger } from './macro'
-import { newKey, putPayload, revealFragments } from './payloads'
+import { collectPayloads, newKey, putPayload, revealFragments } from './payloads'
+import { inlineFragments } from './inline'
 import { createSelectionMemory } from './selection'
 import { readBlockText, readPayloads, writePayloads } from './store'
 import { applyTags } from './tags'
@@ -120,12 +121,15 @@ async function tagPage(pageName: string, audience: Audience): Promise<void> {
 }
 
 /**
- * Put concealed text back into the block, so it can be edited normally.
+ * Show the concealed text inside its own macro, so it can be edited in place.
  *
- * Writes the restored title *before* clearing the payloads — the reverse of
- * concealing, and for the same reason. If the second step fails the text still
- * exists somewhere: here in the block, there in the property. Doing it the
- * other way round would lose it outright when the block write failed.
+ * The macro stays. Removing it would mean re-selecting the text and running a
+ * command again to put the curtain back; this way editing is just editing, and
+ * the text moves back into the property on its own once the block is left.
+ *
+ * Writes the title *before* dropping the payloads — the reverse of concealing,
+ * and for the same reason. If the second step fails the text still exists
+ * somewhere. The other order loses it outright when the block write fails.
  */
 async function unconceal(): Promise<void> {
   const uuids = await targetBlocks()
@@ -134,16 +138,16 @@ async function unconceal(): Promise<void> {
   for (const uuid of uuids) {
     const current = await readBlockText(uuid)
     if (current === null) continue
-    const restored = revealFragments(current.title, current.payloads)
-    if (restored.title === current.title) continue
+    const inlined = inlineFragments(current.title, current.payloads)
+    if (inlined === current.title) continue
 
-    await logseq.Editor.updateBlock(uuid, restored.title)
-    await writePayloads(uuid, restored.payloads)
+    await logseq.Editor.updateBlock(uuid, inlined)
+    await writePayloads(uuid, collectPayloads(inlined, current.payloads))
     changed += 1
   }
 
   logseq.UI.showMsg(
-    changed === 0 ? 'Curtain: nothing concealed here' : `Curtain: revealed ${changed} block(s)`,
+    changed === 0 ? 'Curtain: nothing concealed here' : `Curtain: ${changed} block(s) open for editing`,
     changed === 0 ? 'warning' : 'success',
   )
 }
@@ -193,7 +197,7 @@ export function registerCommands(): void {
   })
 
   logseq.App.registerCommandPalette(
-    { key: 'curtain-unconceal', label: 'Curtain: un-conceal fragments in this block' },
+    { key: 'curtain-unconceal', label: 'Curtain: edit concealed text in place' },
     () => unconceal(),
   )
   logseq.App.registerCommandPalette(
