@@ -118,3 +118,25 @@ describe('createSelectionMemory', () => {
     expect(memory.consume(context())).toEqual(fresh({ start: 10, end: 15, text: 'brown' }))
   })
 })
+
+describe('peek', () => {
+  // The command palette may end the editing session, so the caller needs the
+  // remembered block's identity before it can resolve that block's content.
+  it('reports the remembered selection without consuming it', () => {
+    const memory = createSelectionMemory()
+    memory.remember(fresh())
+    expect(memory.peek()).toEqual(fresh())
+    expect(memory.consume(context())).toEqual(fresh())
+  })
+
+  it('returns null when nothing is remembered', () => {
+    expect(createSelectionMemory().peek()).toBeNull()
+  })
+
+  it('returns null after consuming', () => {
+    const memory = createSelectionMemory()
+    memory.remember(fresh())
+    memory.consume(context())
+    expect(memory.peek()).toBeNull()
+  })
+})

@@ -17,6 +17,21 @@ Inline fragments use the same two flags:
 {{renderer :curtain, k7, spoiler norobots}}
 ```
 
+## Using it
+
+| Action | How |
+|---|---|
+| Tag a whole node | `/spoiler`, `/norobots`, `/veil` while editing |
+| Conceal selected text | select it, then run **Curtain: conceal selected text** from the command palette |
+
+A slash command cannot conceal a selection: typing `/` *replaces* the selected
+text, so there is nothing left to act on. The palette does not type into the
+block, so the selection survives.
+
+Curtain ships **no default keyboard shortcuts** — any chord risks colliding
+with Logseq, another plugin, or the OS. Assign your own under
+**Settings → Keymap → Plugins**.
+
 ## What Curtain is not
 
 Curtain is **concealment, not confidentiality.** It filters read paths; it does not encrypt anything. The payload sits in plaintext in SQLite, in db-sync payloads and in EDN exports, so anyone holding the graph file holds the content.

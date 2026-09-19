@@ -65,6 +65,14 @@ export function isSelectionUsable(
 export type SelectionMemory = {
   remember: (selection: RememberedSelection) => void
   /**
+   * Look without taking.
+   *
+   * The command palette can end the editing session, so a caller needs the
+   * remembered block's identity to resolve that block's content before it can
+   * build the context `consume` requires.
+   */
+  peek: () => RememberedSelection | null
+  /**
    * Take the remembered selection if it is still usable.
    *
    * Always clears, usable or not. That makes "already used" impossible by
@@ -80,6 +88,9 @@ export function createSelectionMemory(): SelectionMemory {
   return {
     remember(selection) {
       remembered = selection
+    },
+    peek() {
+      return remembered
     },
     consume(context) {
       const result = isSelectionUsable(remembered, context) ? remembered : null
