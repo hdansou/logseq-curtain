@@ -1,5 +1,6 @@
 import {
   PAYLOAD_PROPERTY_NAME,
+  collectPayloads,
   parsePayloads,
   readRawPayload,
   serialisePayloads,
@@ -36,4 +37,48 @@ export async function writePayloads(blockUuid: string, payloads: PayloadMap): Pr
     PAYLOAD_PROPERTY_NAME,
     serialisePayloads(payloads),
   )
+}
+
+/**
+ * Drop any payloads this block no longer references.
+ *
+ * Returns whether anything was written. Writing payloads is itself a database
+ * change, so reporting "nothing to do" when the set is unchanged is what stops
+ * this retriggering itself.
+ */
+export async function collectOrphanedPayloads(blockUuid: string): Promise<boolean> {
+  const block = await logseq.Editor.getBlock(blockUuid)
+  if (block === null) return false
+
+  const payloads = parsePayloads(readRawPayload(block))
+  if (Object.keys(payloads).length === 0) return false
+
+  const title = (block as { title?: string; content?: string }).title ?? ''
+  const kept = collectPayloads(title, payloads)
+  // `kept` is always a subset, so a matching size means nothing was dropped.
+  if (Object.keys(kept).length === Object.keys(payloads).length) return false
+
+  await writePayloads(blockUuid, kept)
+  return true
+}
+
+/** Watch for blocks whose macros were edited or undone away. */
+export function registerPayloadCollection(): void {
+  const pending = new Set<string>()
+  let timer: ReturnType<typeof setTimeout> | null = null
+
+  logseq.DB.onChanged(({ blocks }) => {
+    for (const block of blocks ?? []) {
+      const uuid = (block as { uuid?: string } | null)?.uuid
+      if (typeof uuid === 'string') pending.add(uuid)
+    }
+    if (pending.size === 0) return
+
+    if (timer !== null) clearTimeout(timer)
+    timer = setTimeout(() => {
+      const batch = Array.from(pending)
+      pending.clear()
+      void Promise.all(batch.map((uuid) => collectOrphanedPayloads(uuid).catch(() => false)))
+    }, 500)
+  })
 }

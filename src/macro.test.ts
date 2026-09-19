@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseFlags } from './flags'
 import {
+  findMacroKeys,
   formatMacro,
   parseMacro,
   parseMacroArguments,
@@ -138,5 +139,31 @@ describe('parseMacroArguments', () => {
     expect(parseMacroArguments([':curtain'])).toBeNull()
     expect(parseMacroArguments([':curtain', 'k7'])).toBeNull()
     expect(parseMacroArguments([])).toBeNull()
+  })
+})
+
+describe('findMacroKeys', () => {
+  it('finds nothing in a block with no macros', () => {
+    expect(findMacroKeys('an ordinary block')).toEqual([])
+  })
+
+  it('finds the key of a single macro', () => {
+    expect(findMacroKeys('before {{renderer :curtain, k7, spoiler}} after')).toEqual(['k7'])
+  })
+
+  it('finds every key when a block holds several fragments', () => {
+    expect(
+      findMacroKeys('{{renderer :curtain, k7, spoiler}} and {{renderer :curtain, m3, norobots}}'),
+    ).toEqual(['k7', 'm3'])
+  })
+
+  it('ignores other plugins’ renderers', () => {
+    expect(findMacroKeys('{{renderer :progress-bar, k7, spoiler}}')).toEqual([])
+  })
+
+  // Conservative on purpose: this drives deletion, so a macro that cannot be
+  // fully parsed must still protect its payload rather than orphan it.
+  it('still finds the key when the flags are unparseable', () => {
+    expect(findMacroKeys('{{renderer :curtain, k7, sploiler}}')).toEqual(['k7'])
   })
 })

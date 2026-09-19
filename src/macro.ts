@@ -70,3 +70,15 @@ export function parseMacroArguments(
   if (!key || flags === undefined) return null
   return { key, audience: parseFlags(flags) }
 }
+
+/**
+ * Every Curtain key referenced by a block's title.
+ *
+ * Deliberately looser than `parseMacro`: it matches on the key alone and does
+ * not validate flags. This drives payload deletion, so a macro that cannot be
+ * fully parsed must still protect its payload rather than orphan it.
+ */
+export function findMacroKeys(title: string): string[] {
+  const pattern = new RegExp(`\\{\\{renderer\\s+:${RENDERER_NAME}\\s*,\\s*([a-z0-9]+)`, 'g')
+  return Array.from(title.matchAll(pattern), (match) => match[1])
+}

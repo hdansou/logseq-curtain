@@ -1,3 +1,5 @@
+import { findMacroKeys } from './macro'
+
 /**
  * The payload store: concealed text, keyed, kept out of `:block/title`.
  *
@@ -107,4 +109,27 @@ export function readRawPayload(block: unknown): string | undefined {
     nested?.[`:${PAYLOAD_PROPERTY_IDENT}`],
   ]
   return candidates.find((value): value is string => typeof value === 'string')
+}
+
+/**
+ * Drop payloads whose macro is no longer in the block.
+ *
+ * Undo and ordinary editing remove a macro from the title but leave its
+ * payload behind. Without this, orphans accumulate, and — the real problem —
+ * undoing a concealment leaves the concealed text in storage, so someone who
+ * conceals something and thinks better of it is wrong to believe it is gone.
+ *
+ * An empty or blank title keeps everything. This deletion is irreversible, and
+ * a block momentarily reporting no title — mid-edit, or a partial read — must
+ * not wipe every payload it has.
+ */
+export function collectPayloads(title: string, payloads: PayloadMap): PayloadMap {
+  if (title.trim() === '') return { ...payloads }
+
+  const referenced = new Set(findMacroKeys(title))
+  const kept: PayloadMap = {}
+  for (const [key, text] of Object.entries(payloads)) {
+    if (referenced.has(key)) kept[key] = text
+  }
+  return kept
 }

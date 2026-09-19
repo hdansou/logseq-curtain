@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  collectPayloads,
   newKey,
   parsePayloads,
   putPayload,
@@ -126,5 +127,41 @@ describe('readRawPayload', () => {
 
   it('ignores a non-string value rather than passing it on as text', () => {
     expect(readRawPayload({ [IDENT]: 42 })).toBeUndefined()
+  })
+})
+
+describe('collectPayloads', () => {
+  it('drops a payload whose macro is gone', () => {
+    const payloads = { ma: 'robots', '3u': 'humans and spoiled' }
+    const title = 'I am to be avoided by {{renderer :curtain, 3u, spoiler}} and there is more'
+    expect(collectPayloads(title, payloads)).toEqual({ '3u': 'humans and spoiled' })
+  })
+
+  it('keeps every payload that is still referenced', () => {
+    const payloads = { k7: 'one', m3: 'two' }
+    const title = '{{renderer :curtain, k7, spoiler}} {{renderer :curtain, m3, norobots}}'
+    expect(collectPayloads(title, payloads)).toEqual(payloads)
+  })
+
+  it('does not mutate the input', () => {
+    const payloads = { ma: 'robots', k7: 'kept' }
+    collectPayloads('{{renderer :curtain, k7, spoiler}}', payloads)
+    expect(payloads).toEqual({ ma: 'robots', k7: 'kept' })
+  })
+
+  // This drives irreversible deletion. A block momentarily reporting an empty
+  // title — mid-edit, or a partial read — must not wipe every payload it has.
+  it('keeps everything when the title is empty', () => {
+    const payloads = { k7: 'one', m3: 'two' }
+    expect(collectPayloads('', payloads)).toEqual(payloads)
+    expect(collectPayloads('   ', payloads)).toEqual(payloads)
+  })
+
+  it('drops everything when a real title references no macros', () => {
+    expect(collectPayloads('the user removed every macro', { k7: 'one' })).toEqual({})
+  })
+
+  it('handles a block with no payloads', () => {
+    expect(collectPayloads('{{renderer :curtain, k7, spoiler}}', {})).toEqual({})
   })
 })
