@@ -12,7 +12,8 @@
     "id": "logseq-curtain",
     "title": "Curtain",
     "icon": "./icon.png",
-    "main": "dist/index.html"
+    "main": "dist/index.html",
+    "supportsDBOnly": true
   },
   "dependencies": {
     "@logseq/libs": "^0.3.2"
@@ -37,5 +38,6 @@
     "ai",
     "agents",
     "concealment"
-  ]
+  ],
+  "packageManager": "pnpm@11.20.0"
 }

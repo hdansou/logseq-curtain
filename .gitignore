@@ -1,5 +1,12 @@
 node_modules/
 dist/
-*.log
 release/
 *.zip
+coverage/
+.vite/
+.cache/
+*.log
+.env*
+*.local.*
+.DS_Store
+Thumbs.db
