@@ -73,7 +73,7 @@ the `cliworker` test graph; harmless, removable whenever.
 
 - [ ] **T4.1** MCP filter in `logseq-headless-mcp` — the only real enforcement. Hook verified: an injectable pass at `src/server.mjs:169-175`, after `resolveRefs`, before `capResponse`, matching their injection convention. Covers all eight tools; does **not** cover error text or worker-side `get_backlinks` filtering.
 - [ ] **T4.1a** Handle the paging hazard: filtering after paging makes `limit: 20` return fewer with no cursor, indistinguishable from "there were only 12". Page after filtering, or report the removed count.
-- [ ] **T4.2** Skill instruction honoring the contract.
+- [x] **T4.2** [`agent/`](agent/) — a self-contained skill whose description triggers *before* the first graph read (afterwards is too late to avoid retrieval), a paste-able `CLAUDE.md`/`AGENTS.md` block, and the option of putting `NOROBOTS.md` in the graph root. The skill repeats the rule rather than linking it, because an agent may never fetch the other file.
 - [ ] **T4.3** CLI wrapper `--respect-norobots`.
 
 ## Phase 5 — Tests

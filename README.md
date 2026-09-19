@@ -68,4 +68,5 @@ everywhere else that file is the only thing asking.
 - [docs/SPEC.md](docs/SPEC.md) — vocabulary, storage model, architecture
 - [docs/leak-surfaces.md](docs/leak-surfaces.md) — verified leak inventory and the test matrix
 - [NOROBOTS.md](NOROBOTS.md) — the contract agents are pointed at
+- [agent/](agent/) — how to point them at it: a skill, a `CLAUDE.md` block, or the graph root
 - [TASKS.md](TASKS.md) — build order
