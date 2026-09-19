@@ -56,8 +56,16 @@ Use it for spoilers, screenshares, demo graphs, and keeping agents from ingestin
 
 The `#norobots` axis is an honor system with one exception. Agents that route through a filtering MCP server genuinely never receive the content; every other agent is trusted to respect the tag, exactly as with `robots.txt`.
 
+## The agent contract
+
+[NOROBOTS.md](NOROBOTS.md) is the portable statement of what `#norobots` asks
+of an AI agent. Point agents at it — a skill instruction, a `CLAUDE.md`, or a
+note in the graph root. Through a filtering MCP server the rule is enforced;
+everywhere else that file is the only thing asking.
+
 ## Documentation
 
 - [docs/SPEC.md](docs/SPEC.md) — vocabulary, storage model, architecture
 - [docs/leak-surfaces.md](docs/leak-surfaces.md) — verified leak inventory and the test matrix
+- [NOROBOTS.md](NOROBOTS.md) — the contract agents are pointed at
 - [TASKS.md](TASKS.md) — build order

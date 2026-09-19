@@ -21,7 +21,7 @@ so they cannot run until this phase exists.
 - [x] **T1.1** Scaffold — vite + `vite-plugin-logseq`, TS, vitest, `@logseq/libs` ^0.3.2. *Notes: vitest needs its own config (`vite-plugin-logseq` fails at `buildStart` under the runner); pnpm 11 needs `pnpm approve-builds esbuild`.*
 - [x] **T1.2** Freeze the vocabulary — `src/flags.ts` is the single source. `FLAG_NAMES` drives both the node tags and the macro flags, so they cannot drift. Parsing throws on unknown or duplicate flags: a typo must not degrade to "conceal from nobody", since over-concealing is recoverable and leaking is not. 10 tests, written first.
 - [x] **T1.3** Key format — short base36, unique within a block only, so keys stay short enough to read in raw text. Length grows if a crowded block keeps colliding. Delivered with the payload store.
-- [ ] **T1.4** Write `NOROBOTS.md`, the portable contract agents are pointed at.
+- [x] **T1.4** [`NOROBOTS.md`](NOROBOTS.md) — states the rule, the three carriers (tagged node with inheritance, inline macro, payload property), and explicitly that `#spoiler` alone is *not* for agents, since a contract that conflated the axes would make an agent withhold content it should use. Also forbids routing around the mark through another tool, and is honest that it is `robots.txt`-shaped rather than a security control.
 
 ## Phase 2 — Host probes (need a loadable plugin)
 
