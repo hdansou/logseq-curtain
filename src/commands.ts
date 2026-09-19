@@ -78,15 +78,45 @@ async function concealFragment(audience: Audience): Promise<void> {
   )
 }
 
-async function tagNode(audience: Audience, trigger: string): Promise<void> {
+/**
+ * Which blocks a node command acts on.
+ *
+ * A multi-block selection wins, so a range can be tagged in one action. Then
+ * an explicit target (the block whose context menu was used), then whatever is
+ * being edited.
+ */
+async function targetBlocks(explicit?: string): Promise<string[]> {
+  const selected = await logseq.Editor.getSelectedBlocks()
+  if (selected && selected.length > 0) return selected.map((block) => String(block.uuid))
+  if (explicit !== undefined) return [explicit]
+  const editing = await editingBlock()
+  return editing === null ? [] : [editing]
+}
+
+async function tagBlocks(uuids: string[], audience: Audience): Promise<void> {
+  for (const uuid of uuids) await applyTags(uuid, audience)
+}
+
+/** The slash path: strip the typed trigger, then tag. */
+async function tagFromSlash(audience: Audience, trigger: string): Promise<void> {
   const blockUuid = await editingBlock()
-  if (blockUuid === null) return
+  if (blockUuid !== null) {
+    const content = await logseq.Editor.getEditingBlockContent()
+    const stripped = stripSlashTrigger(content, trigger)
+    if (stripped !== content) await logseq.Editor.updateBlock(blockUuid, stripped)
+  }
+  await tagBlocks(await targetBlocks(blockUuid ?? undefined), audience)
+}
 
-  const content = await logseq.Editor.getEditingBlockContent()
-  const stripped = stripSlashTrigger(content, trigger)
-  if (stripped !== content) await logseq.Editor.updateBlock(blockUuid, stripped)
-
-  await applyTags(blockUuid, audience)
+async function tagPage(pageName: string, audience: Audience): Promise<void> {
+  // The page menu hands over a name, not a uuid.
+  const page = await logseq.Editor.getPage(pageName)
+  const uuid = (page as { uuid?: string } | null)?.uuid
+  if (typeof uuid !== 'string') {
+    logseq.UI.showMsg(`Curtain: could not resolve the page "${pageName}"`, 'error')
+    return
+  }
+  await applyTags(uuid, audience)
 }
 
 export function registerCommands(): void {
@@ -105,7 +135,17 @@ export function registerCommands(): void {
   for (const [name, audience] of Object.entries(AUDIENCES)) {
     // Slash command → the node. Typing `/` replaces the selection, so it can
     // never act on a fragment.
-    logseq.Editor.registerSlashCommand(name, () => tagNode(audience, name))
+    logseq.Editor.registerSlashCommand(name, () => tagFromSlash(audience, name))
+
+    // Right-click a bullet, or a multi-block selection.
+    logseq.Editor.registerBlockContextMenuItem(`Curtain: ${name}`, async ({ uuid }) => {
+      await tagBlocks(await targetBlocks(String(uuid)), audience)
+    })
+
+    // The page ••• menu, for the page and journal cases.
+    logseq.App.registerPageMenuItem(`Curtain: ${name}`, ({ page }) => {
+      void tagPage(page, audience)
+    })
 
     // Palette entry → the fragment. Opening the palette does not type into
     // the block, so the selection survives where a slash command destroys it.

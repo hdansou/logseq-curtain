@@ -234,6 +234,11 @@ context cannot linger and be reconsidered in another.
 | Page menu | `registerPageMenuItem` | that page |
 | Multi-block selection | `getSelectedBlocks` | every selected block |
 
+`registerHighlightContextMenuItem` looks like the natural fragment entry point
+— a context menu on selected text — but its own docstring says *"Current it's
+only available for pdf viewer"*. It does not serve block editing, so the
+palette remains the fragment path. Recorded so it is not re-investigated.
+
 There is no native text prompt — only `showMsg` — so any future input UI has
 to be built with `provideUI`. The remembered-selection design avoids needing
 one at all, which is a large part of its appeal.
