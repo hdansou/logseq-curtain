@@ -1,6 +1,6 @@
 import { CONCEALED_TITLE, concealBlockTitle } from './conceal'
 import { expandDescendants } from './descendants'
-import { isLocked, revealOnHover, setLocked } from './settings'
+import { isLocked, revealOnHover, setLocked, syncHoverSetting } from './settings'
 
 /**
  * Node-level `#spoiler`: a visual treatment for human eyes.
@@ -142,8 +142,14 @@ function setLockedAndRepaint(value: boolean): void {
 
 export async function registerNodeConcealment(): Promise<void> {
   paintStyle()
-  // The setting changes which elements carry the hover class, not the CSS.
-  logseq.onSettingsChanged(() => applyToDocument())
+  syncHoverSetting(logseq.settings as Record<string, unknown> | undefined)
+  // Take the new values from the event rather than re-reading the snapshot,
+  // and repaint the classes: the setting changes which elements carry the
+  // hover class, never the stylesheet.
+  logseq.onSettingsChanged((next: Record<string, unknown>) => {
+    syncHoverSetting(next)
+    applyToDocument()
+  })
 
   logseq.App.registerCommandPalette(
     { key: 'curtain-lock', label: 'Curtain: lock (re-conceal everything, disable hover)' },

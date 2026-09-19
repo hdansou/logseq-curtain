@@ -27,6 +27,29 @@ export const storageMode = (): StorageMode =>
   logseq.settings?.storageMode === 'inline' ? 'inline' : 'property'
 
 /**
+ * Hover-reveal, tracked rather than read live.
+ *
+ * `logseq.settings` is a snapshot and is not guaranteed to be refreshed by the
+ * time `onSettingsChanged` runs, so reading it from inside that handler can
+ * return the value that was just replaced — the toggle then appears to do
+ * nothing. The change event carries the new values, so they are kept here.
+ *
+ * Accepts the string forms too: a settings UI that round-trips a checkbox
+ * through a text field would otherwise leave `"false"` reading as true.
+ */
+const asBoolean = (value: unknown, fallback: boolean): boolean => {
+  if (value === true || value === 'true') return true
+  if (value === false || value === 'false') return false
+  return fallback
+}
+
+let hoverEnabled = true
+
+export const syncHoverSetting = (settings?: Record<string, unknown> | null): void => {
+  hoverEnabled = asBoolean(settings?.revealNodesOnHover, true)
+}
+
+/**
  * Session lock, set by the "Curtain: lock" command.
  *
  * Separate from the setting because the need is momentary — about to share a
@@ -42,5 +65,4 @@ export const setLocked = (value: boolean): void => {
 }
 
 /** Hover reveals only when enabled *and* not locked. */
-export const revealOnHover = (): boolean =>
-  !locked && logseq.settings?.revealNodesOnHover !== false
+export const revealOnHover = (): boolean => !locked && hoverEnabled
