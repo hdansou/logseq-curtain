@@ -1,5 +1,5 @@
 import { CONCEALED_TITLE, concealBlockTitle } from './conceal'
-import { revealOnHover } from './settings'
+import { isLocked, revealOnHover, setLocked } from './settings'
 
 /**
  * Node-level `#spoiler`: a visual treatment for human eyes.
@@ -59,10 +59,11 @@ async function refresh(): Promise<void> {
 }
 
 /**
- * Hover-reveal is opt-in.
+ * Hover-reveal is on by default and suppressed while locked.
  *
- * It used to be unconditional, which defeated the point: a stray mouse-over
- * revealed a spoilered node during exactly the screen share it was meant for.
+ * Unconditional hover-reveal defeated the point at the one moment it mattered:
+ * a stray mouse-over during a screen share. Rather than making the everyday
+ * case worse, the lock turns it off for as long as it is needed.
  */
 function paintStyle(): void {
   const hoverRule = revealOnHover() ? `.${SPOILER_CLASS} .block-content:hover,` : ''
@@ -82,9 +83,30 @@ function paintStyle(): void {
   })
 }
 
+/** Re-conceal everything and stop hover working, in one action. */
+function setLockedAndRepaint(value: boolean): void {
+  setLocked(value)
+  if (value) revealed.clear()
+  paintStyle()
+  applyToDocument()
+  logseq.UI.showMsg(
+    value ? 'Curtain: locked — nothing reveals until unlocked' : 'Curtain: unlocked',
+    value ? 'success' : 'warning',
+  )
+}
+
 export async function registerNodeConcealment(): Promise<void> {
   paintStyle()
   logseq.onSettingsChanged(() => paintStyle())
+
+  logseq.App.registerCommandPalette(
+    { key: 'curtain-lock', label: 'Curtain: lock (re-conceal everything, disable hover)' },
+    () => setLockedAndRepaint(true),
+  )
+  logseq.App.registerCommandPalette(
+    { key: 'curtain-unlock', label: 'Curtain: unlock' },
+    () => setLockedAndRepaint(false),
+  )
 
   await refresh()
 
@@ -99,6 +121,8 @@ export async function registerNodeConcealment(): Promise<void> {
         const block = target?.closest?.(`.${SPOILER_CLASS}`) as HTMLElement | null
         const uuid = block?.getAttribute('blockid')
         if (!uuid) return
+        // While locked, not even a deliberate click reveals.
+        if (isLocked()) return
         if (revealed.has(uuid)) revealed.delete(uuid)
         else revealed.add(uuid)
         applyToDocument()

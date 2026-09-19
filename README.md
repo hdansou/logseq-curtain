@@ -28,6 +28,11 @@ A slash command cannot conceal a selection: typing `/` *replaces* the selected
 text, so there is nothing left to act on. The palette does not type into the
 block, so the selection survives.
 
+Hovering a blurred node reveals it. Before sharing your screen, run
+**Curtain: lock** from the palette — it re-conceals everything revealed this
+session and stops hover *and* click working until you unlock. There is also a
+setting to turn hover-reveal off permanently.
+
 Curtain ships **no default keyboard shortcuts** — any chord risks colliding
 with Logseq, another plugin, or the OS. Assign your own under
 **Settings → Keymap → Plugins**.

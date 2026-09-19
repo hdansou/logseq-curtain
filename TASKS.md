@@ -51,7 +51,7 @@ the `cliworker` test graph; harmless, removable whenever.
 
 ## Phase 3b — Settings and sharing
 
-- [x] **T3.8** Persist the node blur. Hover-reveal was unconditional, which defeated the point — a stray mouse-over revealed a spoilered node during exactly the screen share it was for. Now opt-in via settings, default off; click toggles instead, in the capture phase so the reveal lands before Logseq enters edit mode. Reveal state is session-only, never written to the graph.
+- [x] **T3.8** Hover-reveal stays on by default — it is the right everyday behaviour — with two ways to stop an accidental reveal: a setting, and a **`Curtain: lock`** palette command that re-conceals everything revealed this session and disables both hover *and* click until unlocked. The lock exists because the need is momentary (about to share a screen) and hunting through plugin settings at that moment is friction in the wrong place. Reveal state is session-only, never written to the graph.
 - [ ] **T3.9** Copying a concealed fragment. `{{renderer :curtain, k7}}` copies as the macro, not the text, which is a real defect. **Storing the text in the macro is not the fix** — E2E-03 passes precisely because the payload is not in `:block/title`, and reversing that reopens seven leak surfaces plus the comma-mangling bug. `onBeforeCommandInvoked('logseq.editor/copy')` is a notification hook with no way to rewrite the clipboard, so interception is out. Options: a "copy with concealed text" command writing to the clipboard directly, or T3.3f un-conceal then copy natively.
 
 ## Phase 4 — Agent-side enforcement

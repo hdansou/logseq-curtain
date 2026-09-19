@@ -6,9 +6,26 @@ export const SETTINGS: SettingSchemaDesc[] = [
     type: 'boolean',
     title: 'Reveal spoilered nodes on hover',
     description:
-      'When off, a spoilered node stays blurred until you click it. Off is the safer default for screen sharing: a stray mouse-over cannot reveal it.',
-    default: false,
+      'Hovering a blurred node reveals it. Convenient day to day. Turn it off, or use "Curtain: lock" before sharing your screen, when an accidental mouse-over would show something you did not mean to.',
+    default: true,
   },
 ]
 
-export const revealOnHover = (): boolean => logseq.settings?.revealNodesOnHover === true
+/**
+ * Session lock, set by the "Curtain: lock" command.
+ *
+ * Separate from the setting because the need is momentary — about to share a
+ * screen — and reaching into plugin settings for that is friction at exactly
+ * the wrong time. A lock also re-conceals whatever is already revealed, which
+ * toggling the setting alone would not do.
+ */
+let locked = false
+
+export const isLocked = (): boolean => locked
+export const setLocked = (value: boolean): void => {
+  locked = value
+}
+
+/** Hover reveals only when enabled *and* not locked. */
+export const revealOnHover = (): boolean =>
+  !locked && logseq.settings?.revealNodesOnHover !== false
