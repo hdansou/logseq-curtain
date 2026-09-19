@@ -17,7 +17,7 @@ Because the axes are independent, two tags express all four states and no third 
 |---|---|---|---|
 | — | — | sees | sees |
 | `#spoiler` | `spoiler` | **hidden** | sees |
-| `#norobots` | `norobots` | sees | **blocked** |
+| `#norobots` | `norobots` | **concealed in the UI**, readable on click | **blocked** |
 | `#spoiler #norobots` | `spoiler norobots` | **hidden** | **blocked** |
 
 The `#spoiler`-only row is a first-class case, not a degenerate one: content staged for an agent that should not clutter the human's view.

@@ -1,3 +1,5 @@
+import { FLAG_NAMES, type Audience } from './flags'
+
 /**
  * The concealed fragment's markup.
  *
@@ -16,6 +18,7 @@ const ESCAPES: Record<string, string> = {
 
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (char) => ESCAPES[char])
 
+
 export const CONCEALED_PLACEHOLDER = '•••'
 
 export function renderCurtain(options: {
@@ -23,10 +26,17 @@ export function renderCurtain(options: {
   key: string
   concealed: boolean
   text: string
+  audience: Audience
 }): string {
-  const { slot, key, concealed, text } = options
+  const { slot, key, concealed, text, audience } = options
+
+  // Every curtain conceals, so the mark is unmistakable. The axis therefore
+  // has to survive in the markup: once the text is hidden, styling is the only
+  // thing left that can say *which* axis is in force.
+  const axes = FLAG_NAMES.filter((name) => audience[name]).map((name) => `curtain--${name}`)
+
   const attrs =
-    `class="curtain ${concealed ? 'curtain--concealed' : 'curtain--revealed'}" ` +
+    `class="curtain ${concealed ? 'curtain--concealed' : 'curtain--revealed'} ${axes.join(' ')}" ` +
     `data-curtain-key="${escapeHtml(key)}" ` +
     `data-curtain-slot="${escapeHtml(slot)}" ` +
     `data-on-click="toggleCurtain" ` +

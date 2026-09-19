@@ -40,6 +40,9 @@ with Logseq, another plugin, or the OS. Assign your own under
 
 ## Two storage modes
 
+Every concealed fragment renders as `•••` whichever axis is set, tinted by
+axis so you can see which is in force without revealing it. Click to reveal.
+
 | Mode | Macro | Text lives in | Trade |
 |---|---|---|---|
 | `property` *(default)* | `{{renderer :curtain, ur, spoiler}}` | a hidden property | Strongest — the text is not in the block title, so search, exports and the graph view never see it |
