@@ -1,5 +1,20 @@
 # Curtain — Tasks
 
+## Production-hardening pass (2026-09-19)
+
+Applied: DB-only manifest declaration, `.gitignore` widened, tracked scratch
+removed, `dompurify` and `lodash-es` overridden (the only two advisories that
+shipped), `vite`/`vitest` majors bumped, release build minified. 23
+vulnerabilities → 0.
+
+A security review then found a **`norobots` filter bypass**: a brace in
+concealed text defeated the macro pattern and the content reached the model
+unredacted, silently, while the UI still showed it concealed. Fixed in both
+repos with six regression cases.
+
+Deferred: `web`/`effect` manifest fields (untested on web), the E2E leak matrix
+(T5.1/T5.2), the CLI wrapper (T4.3).
+
 ## Release 1.0.0
 
 - [x] Icon — five candidates in `assets/icons/`, chosen on how they read at 28px rather than at 128px, since that is what a plugin list renders. C ships as `icon.png`.
@@ -78,8 +93,8 @@ the `cliworker` test graph; harmless, removable whenever.
 
 ## Phase 4 — Agent-side enforcement
 
-- [ ] **T4.1** MCP filter in `logseq-headless-mcp` — the only real enforcement. Hook verified: an injectable pass at `src/server.mjs:169-175`, after `resolveRefs`, before `capResponse`, matching their injection convention. Covers all eight tools; does **not** cover error text or worker-side `get_backlinks` filtering.
-- [ ] **T4.1a** Handle the paging hazard: filtering after paging makes `limit: 20` return fewer with no cursor, indistinguishable from "there were only 12". Page after filtering, or report the removed count.
+- [x] **T4.1** MCP filter — shipped in `logseq-headless-mcp` as an injectable pass at `src/server.mjs`, after `resolveRefs` and before `capResponse`, covering all eight tools. Unlike its neighbours it **fails closed**: those degrade open because they are presentation, and this one is the only thing between marked content and the model. Withholds the payload property, `norobots` macros and tagged nodes with inheritance. Still does **not** cover tool error text or the worker-side filtering `get_backlinks` inherits.
+- [x] **T4.1a** Paging hazard — results now report how many items were withheld, so a short list cannot be mistaken for a short result set.
 - [x] **T4.2** [`agent/`](agent/) — a self-contained skill whose description triggers *before* the first graph read (afterwards is too late to avoid retrieval), a paste-able `CLAUDE.md`/`AGENTS.md` block, and the option of putting `NOROBOTS.md` in the graph root. The skill repeats the rule rather than linking it, because an agent may never fetch the other file.
 - [ ] **T4.3** CLI wrapper `--respect-norobots`.
 
