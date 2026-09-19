@@ -261,7 +261,18 @@ value shape ever matters.
 
 ## 7. Agent-side enforcement
 
-**MCP filter (real).** In `logseq-headless-mcp`, before results leave the server: drop nodes tagged `#norobots` and those inheriting it; strip `payloads` entries whose flags include `norobots`; replace concealed fragments with a marker so the model knows something was withheld rather than seeing a malformed sentence.
+**MCP filter (real).** In `logseq-headless-mcp`: drop nodes tagged `#norobots` and those inheriting it; strip `payloads` entries whose flags include `norobots`; replace concealed fragments with a marker so the model knows something was withheld rather than reading a malformed sentence.
+
+Integration point, verified against that repo:
+
+- **One choke point covers all eight tools.** `src/server.mjs:169-175`. Every tool is `{name, config, run()}` returning plain data; the protocol edge is a single loop.
+- **Add it as an injectable pass**, matching `resolveRefs` and `capResponse` (declared `src/server.mjs:110-112`, defaulted `:123-125`). That convention exists so a tool added later inherits the behaviour instead of having to remember it.
+- **Order: after resolution, before the cap.** Resolution rewrites `[[uuid]]` into titles, so filtering after it can match resolved titles; capping last means the budget measures what is actually sent.
+- **Precedent for entity-predicate filtering** is already there: `src/linked-refs.mjs:38-41` defines datalog `hidden` / `page-hidden` rules over `:logseq.property/hide?`, walking `:block/parent`. Reusable shape for a `#norobots` rule — though note T0 showed `hide?` itself is not usable for our axes.
+- **Two things that site does not cover:** tool error text (`src/server.mjs:42`), which by convention already carries no user content, and the worker-side filtering `get_backlinks` inherits from the worker.
+- The repo is **npm**, not pnpm: `package-lock.json`, `npm test` runs node's built-in runner. Live suites are env-gated behind `LOGSEQ_MCP_E2E=1` and skip by default.
+
+**The paging hazard.** Filtering after paging means a `limit: 20` call can return fewer than 20 items with no cursor — indistinguishable from "there were only 12". That is the same silent-wrong-answer shape as every other finding in this project, and that repo's designs 004 and 007 were written to avoid it. The filter must either page after filtering or report how many it removed.
 
 **Convention (honor system).** `NOROBOTS.md`, pointed at from the graph root:
 

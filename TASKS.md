@@ -50,7 +50,8 @@ the `cliworker` test graph; harmless, removable whenever.
 
 ## Phase 4 — Agent-side enforcement
 
-- [ ] **T4.1** MCP filter in `logseq-headless-mcp`: drop `#norobots` nodes, strip payload properties. The only real enforcement.
+- [ ] **T4.1** MCP filter in `logseq-headless-mcp` — the only real enforcement. Hook verified: an injectable pass at `src/server.mjs:169-175`, after `resolveRefs`, before `capResponse`, matching their injection convention. Covers all eight tools; does **not** cover error text or worker-side `get_backlinks` filtering.
+- [ ] **T4.1a** Handle the paging hazard: filtering after paging makes `limit: 20` return fewer with no cursor, indistinguishable from "there were only 12". Page after filtering, or report the removed count.
 - [ ] **T4.2** Skill instruction honoring the contract.
 - [ ] **T4.3** CLI wrapper `--respect-norobots`.
 
