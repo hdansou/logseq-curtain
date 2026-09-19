@@ -1,8 +1,8 @@
 import { FLAG_NAMES, parseFlags, type Audience } from './flags'
 import { formatMacro, spliceMacro, stripSlashTrigger } from './macro'
-import { newKey, putPayload } from './payloads'
+import { newKey, putPayload, revealFragments } from './payloads'
 import { createSelectionMemory } from './selection'
-import { readPayloads, writePayloads } from './store'
+import { readBlockText, readPayloads, writePayloads } from './store'
 import { applyTags } from './tags'
 
 /**
@@ -119,6 +119,66 @@ async function tagPage(pageName: string, audience: Audience): Promise<void> {
   await applyTags(uuid, audience)
 }
 
+/**
+ * Put concealed text back into the block, so it can be edited normally.
+ *
+ * Writes the restored title *before* clearing the payloads — the reverse of
+ * concealing, and for the same reason. If the second step fails the text still
+ * exists somewhere: here in the block, there in the property. Doing it the
+ * other way round would lose it outright when the block write failed.
+ */
+async function unconceal(): Promise<void> {
+  const uuids = await targetBlocks()
+  let changed = 0
+
+  for (const uuid of uuids) {
+    const current = await readBlockText(uuid)
+    if (current === null) continue
+    const restored = revealFragments(current.title, current.payloads)
+    if (restored.title === current.title) continue
+
+    await logseq.Editor.updateBlock(uuid, restored.title)
+    await writePayloads(uuid, restored.payloads)
+    changed += 1
+  }
+
+  logseq.UI.showMsg(
+    changed === 0 ? 'Curtain: nothing concealed here' : `Curtain: revealed ${changed} block(s)`,
+    changed === 0 ? 'warning' : 'success',
+  )
+}
+
+/**
+ * Copy the selected blocks with their concealed text restored.
+ *
+ * Copying normally yields the macro rather than the text, which makes a
+ * concealed block useless to share. This leaves the block untouched — it is
+ * the same restoration as `unconceal`, written to the clipboard instead of
+ * back to the graph, so the two cannot drift apart.
+ */
+async function copyRevealed(): Promise<void> {
+  const uuids = await targetBlocks()
+  const lines: string[] = []
+
+  for (const uuid of uuids) {
+    const current = await readBlockText(uuid)
+    if (current !== null) lines.push(revealFragments(current.title, current.payloads).title)
+  }
+
+  const text = lines.join('\n')
+  if (text === '') {
+    logseq.UI.showMsg('Curtain: nothing selected to copy', 'warning')
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(text)
+    logseq.UI.showMsg(`Curtain: copied ${lines.length} block(s) with concealed text`, 'success')
+  } catch {
+    logseq.UI.showMsg('Curtain: could not reach the clipboard', 'error')
+  }
+}
+
 export function registerCommands(): void {
   logseq.Editor.onInputSelectionEnd(async (event) => {
     const blockUuid = await editingBlock()
@@ -131,6 +191,15 @@ export function registerCommands(): void {
       at: Date.now(),
     })
   })
+
+  logseq.App.registerCommandPalette(
+    { key: 'curtain-unconceal', label: 'Curtain: un-conceal fragments in this block' },
+    () => unconceal(),
+  )
+  logseq.App.registerCommandPalette(
+    { key: 'curtain-copy-revealed', label: 'Curtain: copy with concealed text' },
+    () => copyRevealed(),
+  )
 
   for (const [name, audience] of Object.entries(AUDIENCES)) {
     // Slash command → the node. Typing `/` replaces the selection, so it can

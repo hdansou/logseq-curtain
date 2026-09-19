@@ -6,6 +6,7 @@ import {
   putPayload,
   readRawPayload,
   removePayload,
+  revealFragments,
   serialisePayloads,
 } from './payloads'
 
@@ -163,5 +164,50 @@ describe('collectPayloads', () => {
 
   it('handles a block with no payloads', () => {
     expect(collectPayloads('{{renderer :curtain, k7, spoiler}}', {})).toEqual({})
+  })
+})
+
+describe('revealFragments', () => {
+  it('puts the concealed text back and drops the payload it used', () => {
+    const result = revealFragments('before {{renderer :curtain, k7, spoiler}} after', {
+      k7: 'the secret',
+    })
+    expect(result.title).toBe('before the secret after')
+    expect(result.payloads).toEqual({})
+  })
+
+  it('restores every fragment in the block', () => {
+    const result = revealFragments(
+      '{{renderer :curtain, k7, spoiler}} and {{renderer :curtain, m3, norobots}}',
+      { k7: 'one', m3: 'two' },
+    )
+    expect(result.title).toBe('one and two')
+    expect(result.payloads).toEqual({})
+  })
+
+  // Restoring what is not there would silently delete the macro and leave the
+  // user with nothing, so a macro whose payload is gone is left untouched.
+  it('leaves a macro alone when its payload is missing', () => {
+    const title = 'before {{renderer :curtain, gone, spoiler}} after'
+    expect(revealFragments(title, {}).title).toBe(title)
+  })
+
+  it('keeps payloads that belong to other blocks’ keys', () => {
+    const result = revealFragments('{{renderer :curtain, k7, spoiler}}', {
+      k7: 'used',
+      other: 'untouched',
+    })
+    expect(result.payloads).toEqual({ other: 'untouched' })
+  })
+
+  it('leaves a block with no macros alone', () => {
+    const result = revealFragments('nothing here', { k7: 'kept' })
+    expect(result.title).toBe('nothing here')
+    expect(result.payloads).toEqual({ k7: 'kept' })
+  })
+
+  it('restores text containing commas, which a macro argument could not hold', () => {
+    const result = revealFragments('{{renderer :curtain, k7, spoiler}}', { k7: 'one,two,  three' })
+    expect(result.title).toBe('one,two,  three')
   })
 })

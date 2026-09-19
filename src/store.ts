@@ -82,3 +82,15 @@ export function registerPayloadCollection(): void {
     }, 500)
   })
 }
+
+/** A block's title and payloads together, in one fetch. */
+export async function readBlockText(
+  blockUuid: string,
+): Promise<{ title: string; payloads: PayloadMap } | null> {
+  const block = await logseq.Editor.getBlock(blockUuid)
+  if (block === null) return null
+  return {
+    title: (block as { title?: string }).title ?? '',
+    payloads: parsePayloads(readRawPayload(block)),
+  }
+}

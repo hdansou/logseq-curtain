@@ -1,4 +1,4 @@
-import { findMacroKeys } from './macro'
+import { RENDERER_NAME, findMacroKeys } from './macro'
 
 /**
  * The payload store: concealed text, keyed, kept out of `:block/title`.
@@ -132,4 +132,38 @@ export function collectPayloads(title: string, payloads: PayloadMap): PayloadMap
     if (referenced.has(key)) kept[key] = text
   }
   return kept
+}
+
+/**
+ * Put concealed text back into a block's title.
+ *
+ * Serves both un-concealing (write the result back to the block) and copying
+ * (use the title, leave the block alone), so the two cannot drift apart.
+ *
+ * A macro whose payload is missing is left exactly as it is. Replacing it with
+ * nothing would delete the macro and leave the user with neither the text nor
+ * any sign that it was ever there.
+ */
+export function revealFragments(
+  title: string,
+  payloads: PayloadMap,
+): { title: string; payloads: PayloadMap } {
+  const used = new Set<string>()
+  const pattern = new RegExp(
+    `\\{\\{renderer\\s+:${RENDERER_NAME}\\s*,\\s*([a-z0-9]+)\\s*(?:,[^}]*)?\\}\\}`,
+    'g',
+  )
+
+  const restored = title.replace(pattern, (macro, key: string) => {
+    const text = payloads[key]
+    if (text === undefined) return macro
+    used.add(key)
+    return text
+  })
+
+  const remaining: PayloadMap = {}
+  for (const [key, text] of Object.entries(payloads)) {
+    if (!used.has(key)) remaining[key] = text
+  }
+  return { title: restored, payloads: remaining }
 }
