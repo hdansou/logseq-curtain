@@ -132,6 +132,37 @@ async function tagPage(pageName: string, audience: Audience): Promise<void> {
 }
 
 /**
+ * Remove the curtain entirely, leaving plain text.
+ *
+ * Distinct from converting between storage modes: those keep the fragment
+ * concealed, this ends the concealment. Works in both modes, since
+ * `revealFragments` treats a reference that names no payload as the text.
+ *
+ * Writes the restored title before clearing payloads, so a failure on the
+ * second step leaves the text in both places rather than neither.
+ */
+async function unconceal(): Promise<void> {
+  const uuids = await targetBlocks()
+  let changed = 0
+
+  for (const uuid of uuids) {
+    const current = await readBlockText(uuid)
+    if (current === null) continue
+    const restored = revealFragments(current.title, current.payloads)
+    if (restored.title === current.title) continue
+
+    await logseq.Editor.updateBlock(uuid, restored.title)
+    await writePayloads(uuid, restored.payloads)
+    changed += 1
+  }
+
+  logseq.UI.showMsg(
+    changed === 0 ? 'Curtain: nothing concealed here' : `Curtain: un-concealed ${changed} block(s)`,
+    changed === 0 ? 'warning' : 'success',
+  )
+}
+
+/**
  * Move a block's fragments between storage modes.
  *
  * Both directions write the destination before clearing the source, so a
@@ -212,6 +243,10 @@ export function registerCommands(): void {
     })
   })
 
+  logseq.App.registerCommandPalette(
+    { key: 'curtain-unconceal', label: 'Curtain: un-conceal (remove the curtain)' },
+    () => unconceal(),
+  )
   logseq.App.registerCommandPalette(
     { key: 'curtain-to-inline', label: 'Curtain: store concealed text in the macro (editable)' },
     () => convertStorage('inline'),

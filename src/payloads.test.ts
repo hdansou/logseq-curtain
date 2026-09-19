@@ -185,11 +185,18 @@ describe('revealFragments', () => {
     expect(result.payloads).toEqual({})
   })
 
-  // Restoring what is not there would silently delete the macro and leave the
-  // user with nothing, so a macro whose payload is gone is left untouched.
-  it('leaves a macro alone when its payload is missing', () => {
-    const title = 'before {{renderer :curtain, gone, spoiler}} after'
-    expect(revealFragments(title, {}).title).toBe(title)
+  // Once inline became a storage mode, a reference with no payload stopped
+  // meaning "broken". `{{renderer :curtain, gone, spoiler}}` with no payloads
+  // is indistinguishable from an inline fragment whose text is "gone" — keys
+  // are short lowercase strings, and so is plenty of real text.
+  //
+  // So the reference is treated as the text. The alternative would leave every
+  // inline macro permanently un-removable, which is far worse than a macro
+  // with a lost payload revealing its short id.
+  it('treats a reference with no payload as the text itself', () => {
+    expect(revealFragments('before {{renderer :curtain, gone, spoiler}} after', {}).title).toBe(
+      'before gone after',
+    )
   })
 
   it('keeps payloads that belong to other blocks’ keys', () => {
@@ -209,5 +216,34 @@ describe('revealFragments', () => {
   it('restores text containing commas, which a macro argument could not hold', () => {
     const result = revealFragments('{{renderer :curtain, k7, spoiler}}', { k7: 'one,two,  three' })
     expect(result.title).toBe('one,two,  three')
+  })
+})
+
+describe('revealFragments — inline mode', () => {
+  // In inline mode the macro's reference IS the text, so there is no payload
+  // to look up. An earlier version only substituted when the lookup succeeded,
+  // which left inline macros in the block untouched.
+  it('removes an inline macro, keeping its text', () => {
+    expect(revealFragments('a {{renderer :curtain, humans and robots, spoiler}} b', {}).title).toBe(
+      'a humans and robots b',
+    )
+  })
+
+  it('handles inline text containing commas', () => {
+    expect(revealFragments('{{renderer :curtain, one, two, spoiler}}', {}).title).toBe('one, two')
+  })
+
+  it('handles a block holding one of each mode', () => {
+    const result = revealFragments(
+      '{{renderer :curtain, k7, spoiler}} then {{renderer :curtain, inline text, norobots}}',
+      { k7: 'stored' },
+    )
+    expect(result.title).toBe('stored then inline text')
+    expect(result.payloads).toEqual({})
+  })
+
+  it('still drops only the payloads it used', () => {
+    const result = revealFragments('{{renderer :curtain, inline, spoiler}}', { k7: 'kept' })
+    expect(result.payloads).toEqual({ k7: 'kept' })
   })
 })

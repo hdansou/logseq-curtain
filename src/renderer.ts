@@ -66,10 +66,6 @@ export function registerRenderer(): void {
       text-decoration: underline dotted;
       text-underline-offset: 3px;
     }
-    .curtain--broken {
-      color: var(--ls-error-text-color, #c00);
-      font-style: italic;
-    }
   `)
 
   logseq.App.onMacroRendererSlotted(async ({ slot, payload }) => {

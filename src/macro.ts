@@ -93,3 +93,26 @@ export function findMacroKeys(title: string): string[] {
   const pattern = new RegExp(`\\{\\{renderer\\s+:${RENDERER_NAME}\\s*,\\s*([a-z0-9]+)`, 'g')
   return Array.from(title.matchAll(pattern), (match) => match[1])
 }
+
+/**
+ * A fresh global matcher for macro bodies — everything between
+ * `{{renderer :curtain,` and `}}`.
+ *
+ * Returned fresh each call because a global regex carries `lastIndex`, and a
+ * shared instance would skip matches on its second use.
+ */
+export const macroBodyPattern = (): RegExp =>
+  new RegExp(`\\{\\{renderer\\s+:${RENDERER_NAME}\\s*,([^}]*)\\}\\}`, 'g')
+
+/**
+ * Split a macro body into its reference and its trailing flags.
+ *
+ * Flags are always last, so everything before the final comma is the
+ * reference — a payload key in keyed mode, or the text itself in inline mode,
+ * commas and all.
+ */
+export function splitMacroBody(body: string): { reference: string; flags: string } | null {
+  const lastComma = body.lastIndexOf(',')
+  if (lastComma === -1) return null
+  return { reference: body.slice(0, lastComma).trim(), flags: body.slice(lastComma + 1).trim() }
+}

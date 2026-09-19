@@ -1,4 +1,4 @@
-import { RENDERER_NAME, findMacroKeys } from './macro'
+import { findMacroKeys, macroBodyPattern, splitMacroBody } from './macro'
 
 /**
  * The payload store: concealed text, keyed, kept out of `:block/title`.
@@ -140,25 +140,27 @@ export function collectPayloads(title: string, payloads: PayloadMap): PayloadMap
  * Serves both un-concealing (write the result back to the block) and copying
  * (use the title, leave the block alone), so the two cannot drift apart.
  *
- * A macro whose payload is missing is left exactly as it is. Replacing it with
- * nothing would delete the macro and leave the user with neither the text nor
- * any sign that it was ever there.
+ * Handles both storage modes: a reference naming a payload is replaced by that
+ * payload, and one that names nothing is already the text.
  */
 export function revealFragments(
   title: string,
   payloads: PayloadMap,
 ): { title: string; payloads: PayloadMap } {
   const used = new Set<string>()
-  const pattern = new RegExp(
-    `\\{\\{renderer\\s+:${RENDERER_NAME}\\s*,\\s*([a-z0-9]+)\\s*(?:,[^}]*)?\\}\\}`,
-    'g',
-  )
 
-  const restored = title.replace(pattern, (macro, key: string) => {
-    const text = payloads[key]
-    if (text === undefined) return macro
-    used.add(key)
-    return text
+  const restored = title.replace(macroBodyPattern(), (macro, body: string) => {
+    const parts = splitMacroBody(body)
+    if (parts === null) return macro
+
+    // Keyed mode: the reference names a payload. Inline mode: it *is* the
+    // text. Only the keyed case consumes a payload.
+    const stored = payloads[parts.reference]
+    if (stored !== undefined) {
+      used.add(parts.reference)
+      return stored
+    }
+    return parts.reference
   })
 
   const remaining: PayloadMap = {}

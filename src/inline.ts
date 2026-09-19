@@ -1,4 +1,4 @@
-import { RENDERER_NAME } from './macro'
+import { RENDERER_NAME, macroBodyPattern, splitMacroBody } from './macro'
 import { newKey, type PayloadMap } from './payloads'
 
 /**
@@ -14,21 +14,12 @@ import { newKey, type PayloadMap } from './payloads'
  * the raw macro body and treating everything between the first and last comma
  * as the text handles commas without needing to escape them.
  */
-const MACRO_BODY = new RegExp(`\\{\\{renderer\\s+:${RENDERER_NAME}\\s*,([^}]*)\\}\\}`, 'g')
-
-/** Split a macro body into its text part and its trailing flags. */
-function splitBody(body: string): { text: string; flags: string } | null {
-  const lastComma = body.lastIndexOf(',')
-  if (lastComma === -1) return null
-  return { text: body.slice(0, lastComma).trim(), flags: body.slice(lastComma + 1).trim() }
-}
-
 /** Swap each key for its stored text, leaving the macro in place. */
 export function inlineFragments(title: string, payloads: PayloadMap): string {
-  return title.replace(MACRO_BODY, (macro, body: string) => {
-    const parts = splitBody(body)
+  return title.replace(macroBodyPattern(), (macro, body: string) => {
+    const parts = splitMacroBody(body)
     if (parts === null) return macro
-    const text = payloads[parts.text]
+    const text = payloads[parts.reference]
     // Missing payload: leave it exactly as it is rather than blanking it.
     if (text === undefined) return macro
     return `{{renderer :${RENDERER_NAME}, ${text}, ${parts.flags}}}`
@@ -48,13 +39,13 @@ export function extractInlineFragments(
   const next: PayloadMap = { ...payloads }
   let changed = false
 
-  const rewritten = title.replace(MACRO_BODY, (macro, body: string) => {
-    const parts = splitBody(body)
+  const rewritten = title.replace(macroBodyPattern(), (macro, body: string) => {
+    const parts = splitMacroBody(body)
     if (parts === null) return macro
-    if (parts.text in next) return macro
+    if (parts.reference in next) return macro
 
     const key = newKey(next)
-    next[key] = parts.text
+    next[key] = parts.reference
     changed = true
     return `{{renderer :${RENDERER_NAME}, ${key}, ${parts.flags}}}`
   })
