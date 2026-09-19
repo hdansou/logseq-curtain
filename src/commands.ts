@@ -25,10 +25,16 @@ const AUDIENCES: Record<string, Audience> = {
   veil: parseFlags(FLAG_NAMES.join(' ')),
 }
 
+/**
+ * Checked against Logseq's own bindings (`modules/shortcut/config.cljs`).
+ * The obvious mod+shift+h/j/k are all taken — h is :editor/highlight, which
+ * acts on a selection in editing mode, so it would have collided in exactly
+ * this context. mod+alt+* is free.
+ */
 const FRAGMENT_BINDINGS: Record<string, string> = {
-  spoiler: 'mod+shift+h',
-  norobots: 'mod+shift+j',
-  veil: 'mod+shift+k',
+  spoiler: 'mod+alt+s',
+  norobots: 'mod+alt+r',
+  veil: 'mod+alt+v',
 }
 
 async function editingBlock(): Promise<string | null> {
