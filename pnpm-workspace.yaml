@@ -2,3 +2,10 @@ allowBuilds:
   esbuild: true
 onlyBuiltDependencies:
   - esbuild
+
+# These ship: @logseq/libs bundles both into dist, so the advisories reach
+# users rather than staying on a build machine. pnpm 11 reads settings here,
+# not from the `pnpm` field in package.json.
+overrides:
+  dompurify: ^3.4.15
+  lodash-es: ^4.18.1
