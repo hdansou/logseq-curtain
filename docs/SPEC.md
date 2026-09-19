@@ -148,6 +148,15 @@ Two commands, one per axis: `/spoiler` and `/norobots`. Combining them means
 running both, exactly as `#spoiler #norobots` combine on a node. Adding a third
 axis later costs one command, not a new row in a combination table.
 
+Plus `/veil`, defined as **every axis** — not as "spoiler + norobots". Phrased
+that way it is not a combination command and does not reopen the combinatorial
+problem: "conceal from everyone" stays one stable concept however many axes
+exist, whereas a `/spoiler-norobots` style name would multiply.
+
+`/veil` is a **command, not a tag.** It applies `#spoiler` and `#norobots`.
+There is no `#veil` tag; introducing one would mean three tags for two axes and
+immediate drift between them.
+
 Both commands **add**; they never toggle. Logseq already removes a tag through
 its own UI, so a toggle would duplicate that and introduce partial-state
 questions across multi-block selections. Un-concealing a *fragment* does need
@@ -202,6 +211,27 @@ observe the edit, because it re-derives the truth from current content.
 There is no native text prompt — only `showMsg` — so any future input UI has
 to be built with `provideUI`. The remembered-selection design avoids needing
 one at all, which is a large part of its appeal.
+
+### Applying tags
+
+`addBlockTag(blockId, tagId)` — verified in the SDK typings; `addTag` does not
+exist. Detection cannot read tag names off a block directly: in DB graphs
+`block.tags` comes back as bare `{ id: N }` refs with no name fields, so names
+must be resolved by id and cached. Code that reads `tag.originalName ?? tag.name`
+off a list item silently yields `''` and matches nothing — a failure that looks
+like "no tags" rather than an error.
+
+### Why the payload property is typed `:string`
+
+`:string` is not a UI-available property type. It is one of
+`user-allowed-internal-property-types` (`#{:map :json :string}`), reachable only
+through the API or EDN. That is a small bonus: a user cannot accidentally create
+a conflicting property of this type through the UI.
+
+`:json` would describe the payload map more honestly, but the host may then hand
+back a parsed object rather than the string `parsePayloads` expects. `:string`
+is proven working (T2.1); `:json` is unverified. Worth revisiting only if the
+value shape ever matters.
 
 ## 7. Agent-side enforcement
 
