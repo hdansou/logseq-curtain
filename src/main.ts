@@ -1,5 +1,6 @@
 import '@logseq/libs'
 import { registerCommands } from './commands'
+import { registerNodeConcealment } from './nodes'
 import { registerRenderer } from './renderer'
 import { ensurePayloadProperty } from './store'
 
@@ -7,6 +8,7 @@ async function main(): Promise<void> {
   await ensurePayloadProperty()
   registerRenderer()
   registerCommands()
+  await registerNodeConcealment()
   console.log('[curtain] ready')
 }
 

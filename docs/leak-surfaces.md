@@ -11,7 +11,7 @@ The scope decision was **full sweep**, which means every missed surface fails *s
 | # | Surface | Source | inline | property | Test |
 |---|---|---|---|---|---|
 | 1 | Rendered block text | renderer | safe | safe | `E2E-01` |
-| 2 | `data-block-title` attribute | `components/block.cljs:4478` | **LEAKS** | safe | `E2E-02` |
+| 2 | `data-block-title` attribute | `components/block.cljs:4478` | **LEAKS** | safe *(fragments)* / **LEAKS** *(nodes)* | `E2E-02` |
 | 3 | Search index | `worker/search.cljs:614` | **LEAKS** | safe | `E2E-03` |
 | 4 | Search results UI (cmdk) | `components/cmdk/list_item.cljs:84-97` | **LEAKS** | safe | `E2E-04` |
 | 5 | Graph view node labels | `worker/graph_view.cljs` | **LEAKS** | safe | `E2E-05` |
@@ -53,6 +53,13 @@ Row 2 is the one that defeats the whole premise for browser-driving agents: the 
 ## Notes per surface
 
 **2 — `data-block-title`.** Present on every `.ls-block`. Holds `:block/title` verbatim, macro syntax included. Confirmed twice: the attribute assignment, and `has-cloze?` matching `"{{cloze "` against the same field (`fsrs.cljs:151-153`).
+
+The "property" column splits here, and an earlier draft got it wrong by marking the whole row safe on storage alone:
+
+- **Fragments — genuinely closed.** The payload is in a property, so the attribute holds only `{{renderer :curtain, k7, spoiler}}`. Nothing to leak.
+- **Nodes — not closed, and not closable from a plugin.** For a `#spoiler` node the block's own title *is* the concealed content. CSS can blur or hide the rendered text but cannot remove it, and removing it would break editing. So the text stays in the DOM and a browser-driving agent reads it whatever the pixels show.
+
+Curtain still rewrites the attribute for spoilered nodes, but that is defence in depth against one of two open channels, **not** a guarantee. `#spoiler` is a human-eyes treatment by design; blocking agents is `#norobots`, enforced in the MCP filter (rows 11–12), never in the DOM.
 
 **3 — Search index.** The pull selector (`worker/search.cljs:611-625`) is a fixed list: `:block/title` plus specific `:logseq.property/*` attributes. Arbitrary property values are never indexed — the property store's main guarantee.
 

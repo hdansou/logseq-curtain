@@ -45,8 +45,8 @@ the `cliworker` test graph; harmless, removable whenever.
 - [ ] **T3.3g** Tag detection by id with caching — `block.tags` returns bare `{ id: N }` refs in DB graphs, so names must be resolved per id. Reading `originalName`/`name` off the ref yields `''` and matches nothing, failing as "no tags" rather than erroring. Use `addBlockTag(blockId, tagId)`; `addTag` does not exist.
 - [ ] **T3.3f** *(deferred)* Un-conceal a fragment — needs plugin support to lift text back out of the payload property.
 - [x] **T3.4** Reveal-on-click via `provideModel`. `#norobots` alone renders revealed — only `#spoiler` conceals from the human, which is what makes the two axes independent in practice.
-- [ ] **T3.5** Strip `data-block-title` on concealed blocks (leak surface #2).
-- [ ] **T3.6** Node-level `#spoiler`: query tagged nodes, inject CSS keyed by `blockid` (`.ls-block` carries no tag information).
+- [x] **T3.5** Strip `data-block-title` on spoilered nodes — **scoped down honestly.** It closes one of two channels; the rendered text stays in the DOM because CSS cannot remove it without breaking editing. Leak surface #2 is closed for *fragments* by the storage model, not by this. 5 tests.
+- [x] **T3.6** Node-level `#spoiler` — queries tagged uuids, toggles a class per `blockid`, re-applies on a MutationObserver and on tag-touching DB changes (debounced). No observer loop: `concealBlockTitle` reports no-change once concealed.
 
 ## Phase 4 — Agent-side enforcement
 
