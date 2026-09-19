@@ -140,6 +140,40 @@ function setLockedAndRepaint(value: boolean): void {
   )
 }
 
+/**
+ * Write what the plugin actually sees to a page, so it can be read back over
+ * the CLI instead of guessed at.
+ *
+ * Temporary: delete once the hover setting is confirmed working.
+ */
+async function writeDiagnostics(): Promise<void> {
+  const doc = hostDocument()
+  const styles = doc ? Array.from(doc.querySelectorAll('style')) : []
+  const curtainStyles = styles.filter((s) => (s.textContent ?? '').includes(SPOILER_CLASS))
+  // An ungated hover rule from an earlier build would still match, whatever
+  // the class gating does now.
+  const ungatedHover = curtainStyles.filter((s) =>
+    new RegExp(`\\.${SPOILER_CLASS}\\s+\\.block-content:hover`).test(s.textContent ?? ''),
+  )
+  const blocks = doc ? Array.from(doc.querySelectorAll(`.${SPOILER_CLASS}`)) : []
+
+  const lines = [
+    `DIAG settings=${JSON.stringify(logseq.settings ?? null)}`,
+    `DIAG revealOnHover=${revealOnHover()} locked=${isLocked()}`,
+    `DIAG curtainStyleElements=${curtainStyles.length} ungatedHoverRules=${ungatedHover.length}`,
+    `DIAG concealedBlocks=${blocks.length} withHoverClass=${blocks.filter((b) => b.classList.contains(HOVER_CLASS)).length}`,
+  ]
+
+  try {
+    await logseq.Editor.createPage('Curtain-Diagnostics', {}, { createFirstBlock: false, redirect: false })
+    for (const line of lines) await logseq.Editor.appendBlockInPage('Curtain-Diagnostics', line)
+    logseq.UI.showMsg('Curtain: wrote diagnostics to Curtain-Diagnostics', 'success')
+  } catch (error) {
+    console.error('[curtain] diagnostics failed', error)
+  }
+  for (const line of lines) console.log(`[curtain] ${line}`)
+}
+
 export async function registerNodeConcealment(): Promise<void> {
   paintStyle()
   syncHoverSetting(logseq.settings as Record<string, unknown> | undefined)
@@ -151,6 +185,10 @@ export async function registerNodeConcealment(): Promise<void> {
     applyToDocument()
   })
 
+  logseq.App.registerCommandPalette(
+    { key: 'curtain-diagnose', label: 'Curtain: diagnose (write state to a page)' },
+    () => void writeDiagnostics(),
+  )
   logseq.App.registerCommandPalette(
     { key: 'curtain-lock', label: 'Curtain: lock (re-conceal everything, disable hover)' },
     () => setLockedAndRepaint(true),
