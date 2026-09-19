@@ -38,7 +38,7 @@ the `cliworker` test graph; harmless, removable whenever.
 - [x] **T3.1** Payload store — key → text in one hidden plugin property. Flags stay in the macro so they remain readable in raw text. Parsing throws on corruption rather than reading as empty. `readRawPayload` absorbs the host key-spelling variance in one place. 20 tests.
 - [ ] **T3.2** Register the `:curtain` renderer via `onMacroRendererSlotted`; key `provideUI` on `slot`, never on block uuid, or query blocks render it twice.
 - [x] **T3.3a** Selection memory + `isSelectionUsable` — 17 tests, written first. Rules 1–3 checked; rule 4 is enforced by construction since `consume()` always clears. Bounds are validated before slicing because `slice()` truncates silently.
-- [ ] **T3.3b** `/spoiler`, `/norobots` and `/veil` slash commands with fragment-or-node dispatch. `/veil` means *every axis* and is a command, not a tag — it applies both tags, so no `#veil` ever exists.
+- [x] **T3.3b** `/spoiler`, `/norobots`, `/veil` (slash → node) plus editing-mode shortcuts (→ fragment). Context dispatch was **abandoned**: typing `/` replaces the selection, so it would have silently tagged nodes when the user meant fragments. `/veil` derives from `FLAG_NAMES`, so a third axis is covered without edits. 5 tests for trigger stripping.
 - [ ] **T3.3c** Block context menu items (`registerBlockContextMenuItem`).
 - [ ] **T3.3d** Page menu items (`registerPageMenuItem`) — needed for the page/journal half of the scope.
 - [ ] **T3.3e** Multi-block selection (`getSelectedBlocks`); commands add, never toggle.

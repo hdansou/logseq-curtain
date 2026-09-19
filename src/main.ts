@@ -1,11 +1,10 @@
 import '@logseq/libs'
+import { registerCommands } from './commands'
 import { ensurePayloadProperty } from './store'
 
-/**
- * Curtain entry point. Phase 3 registers the `:curtain` renderer here.
- */
 async function main(): Promise<void> {
   await ensurePayloadProperty()
+  registerCommands()
   console.log('[curtain] ready')
 }
 

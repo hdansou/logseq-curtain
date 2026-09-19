@@ -163,15 +163,34 @@ questions across multi-block selections. Un-concealing a *fragment* does need
 plugin support (the text must come back out of the payload property) and is
 deferred to its own command.
 
-### Dispatch: fragment or node?
+### Entry points split by target, not by context
 
-Each command asks one question — is there a **valid remembered selection in the
-block being edited?** If yes it conceals that fragment; if no it tags the node.
+An earlier draft had one command dispatching on whether a selection existed.
+That cannot work: **typing `/` replaces the current selection**, so by the time
+a slash command fires there is no selection left to act on. A context-sensitive
+command would have silently tagged the whole node every time the user meant to
+conceal a fragment — the worst kind of failure, because it looks like it worked.
 
-```
-/spoiler  ├─ valid selection in the editing block → conceal that fragment
-          └─ otherwise                            → tag the node
-```
+So the target is decided by *how* the command is invoked:
+
+| Invocation | Target | Why it works |
+|---|---|---|
+| Keyboard shortcut (`mode: 'editing'`) | the selected fragment | a modifier chord leaves the selection intact |
+| Slash command | the whole node | nothing is selected by then anyway |
+| Block / page menu | that node | no selection involved |
+
+The shortcut path also makes staleness nearly moot — the selection is live at
+the moment the chord is pressed. `isSelectionUsable` still earns its place for
+the gap between the selection event and the keypress, but it is no longer
+carrying the whole design.
+
+### The typed trigger is not removed for you
+
+`editor/clear-current-slash` exists only as a `SlashCommandAction`, which rules
+out a dynamic callback, and it is absent from `ExternalCommandType` so it
+cannot be invoked directly either. The node path therefore strips a trailing
+`/<trigger>` itself, and only a trailing one, so a block that merely mentions
+`/spoiler` is untouched. Harmless if the host did already strip it.
 
 ### The remembered selection
 
@@ -209,7 +228,8 @@ context cannot linger and be reconsidered in another.
 
 | Surface | API | Scope |
 |---|---|---|
-| Slash command | `registerSlashCommand` + `checkEditing` | fragment or current block |
+| Slash command | `registerSlashCommand` + `checkEditing` | current block |
+| Keyboard shortcut | `App.registerCommandShortcut`, `mode: 'editing'` | selected fragment |
 | Block context menu | `registerBlockContextMenuItem` | that block |
 | Page menu | `registerPageMenuItem` | that page |
 | Multi-block selection | `getSelectedBlocks` | every selected block |
