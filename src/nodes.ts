@@ -1,4 +1,5 @@
 import { CONCEALED_TITLE, concealBlockTitle } from './conceal'
+import { revealOnHover } from './settings'
 
 /**
  * Node-level `#spoiler`: a visual treatment for human eyes.
@@ -13,8 +14,12 @@ import { CONCEALED_TITLE, concealBlockTitle } from './conceal'
  * not here.
  */
 const SPOILER_CLASS = 'curtain-node-concealed'
+const REVEALED_CLASS = 'curtain-node-revealed'
+const STYLE_KEY = 'curtain-nodes'
 
 let spoilered = new Set<string>()
+/** Session-only: a reveal lasts until reload, never persisted to the graph. */
+const revealed = new Set<string>()
 let observer: MutationObserver | null = null
 
 const hostDocument = (): Document | null => (window.parent as Window | undefined)?.document ?? null
@@ -41,6 +46,7 @@ function applyToDocument(): void {
     const uuid = element.getAttribute('blockid')
     const shouldConceal = uuid !== null && spoilered.has(uuid)
     element.classList.toggle(SPOILER_CLASS, shouldConceal)
+    element.classList.toggle(REVEALED_CLASS, uuid !== null && revealed.has(uuid))
     // Defence in depth only — see the note above. Closes the attribute
     // channel; the rendered text remains readable in the DOM.
     if (shouldConceal) concealBlockTitle(element, CONCEALED_TITLE)
@@ -52,22 +58,54 @@ async function refresh(): Promise<void> {
   applyToDocument()
 }
 
+/**
+ * Hover-reveal is opt-in.
+ *
+ * It used to be unconditional, which defeated the point: a stray mouse-over
+ * revealed a spoilered node during exactly the screen share it was meant for.
+ */
+function paintStyle(): void {
+  const hoverRule = revealOnHover() ? `.${SPOILER_CLASS} .block-content:hover,` : ''
+  logseq.provideStyle({
+    key: STYLE_KEY,
+    style: `
+      .${SPOILER_CLASS} .block-content {
+        filter: blur(5px);
+        transition: filter 120ms ease-in-out;
+        cursor: pointer;
+      }
+      ${hoverRule}
+      .${SPOILER_CLASS}.${REVEALED_CLASS} .block-content {
+        filter: none;
+      }
+    `,
+  })
+}
+
 export async function registerNodeConcealment(): Promise<void> {
-  logseq.provideStyle(`
-    .${SPOILER_CLASS} .block-content {
-      filter: blur(5px);
-      transition: filter 120ms ease-in-out;
-    }
-    .${SPOILER_CLASS} .block-content:hover,
-    .${SPOILER_CLASS}.curtain-node-revealed .block-content {
-      filter: none;
-    }
-  `)
+  paintStyle()
+  logseq.onSettingsChanged(() => paintStyle())
 
   await refresh()
 
   const doc = hostDocument()
   if (doc !== null) {
+    // Click to toggle a concealed node. Capture phase, so the reveal lands
+    // before Logseq's own handler moves the block into edit mode.
+    doc.addEventListener(
+      'click',
+      (event) => {
+        const target = event.target as HTMLElement | null
+        const block = target?.closest?.(`.${SPOILER_CLASS}`) as HTMLElement | null
+        const uuid = block?.getAttribute('blockid')
+        if (!uuid) return
+        if (revealed.has(uuid)) revealed.delete(uuid)
+        else revealed.add(uuid)
+        applyToDocument()
+      },
+      true,
+    )
+
     // Re-apply after Logseq re-renders. concealBlockTitle reports "no change"
     // once a title is already concealed, so the observer does not retrigger
     // itself into a loop.
