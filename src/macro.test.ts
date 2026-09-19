@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { parseFlags } from './flags'
-import { formatMacro, parseMacro, spliceMacro, stripSlashTrigger } from './macro'
+import {
+  formatMacro,
+  parseMacro,
+  parseMacroArguments,
+  spliceMacro,
+  stripSlashTrigger,
+} from './macro'
 
 describe('formatMacro', () => {
   it('writes the key and both flags', () => {
@@ -104,5 +110,33 @@ describe('stripSlashTrigger', () => {
 
   it('leaves a bare slash alone', () => {
     expect(stripSlashTrigger('some text /', 'spoiler')).toBe('some text /')
+  })
+})
+
+describe('parseMacroArguments', () => {
+  // mldoc comma-splits macro arguments before the renderer sees them, so the
+  // host hands over already-split pieces rather than the raw macro text.
+  it('reads the host-split argument form', () => {
+    expect(parseMacroArguments([':curtain', 'k7', 'spoiler norobots'])).toEqual({
+      key: 'k7',
+      audience: parseFlags('spoiler norobots'),
+    })
+  })
+
+  it('tolerates the whitespace mldoc leaves around arguments', () => {
+    expect(parseMacroArguments([' :curtain ', ' k7 ', ' spoiler '])).toEqual({
+      key: 'k7',
+      audience: parseFlags('spoiler'),
+    })
+  })
+
+  it('returns null for another plugin renderer', () => {
+    expect(parseMacroArguments([':progress-bar', 'k7', 'spoiler'])).toBeNull()
+  })
+
+  it('returns null when arguments are missing', () => {
+    expect(parseMacroArguments([':curtain'])).toBeNull()
+    expect(parseMacroArguments([':curtain', 'k7'])).toBeNull()
+    expect(parseMacroArguments([])).toBeNull()
   })
 })

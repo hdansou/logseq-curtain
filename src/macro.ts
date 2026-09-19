@@ -54,3 +54,19 @@ export function stripSlashTrigger(content: string, trigger: string): string {
   const suffix = `/${trigger}`
   return content.endsWith(suffix) ? content.slice(0, -suffix.length) : content
 }
+
+/**
+ * Read the already-split argument form the renderer hook receives.
+ *
+ * mldoc comma-splits macro arguments before the host calls the renderer, so
+ * `{{renderer :curtain, k7, spoiler norobots}}` arrives as
+ * `[':curtain', 'k7', 'spoiler norobots']` rather than as raw text.
+ */
+export function parseMacroArguments(
+  args: readonly string[],
+): { key: string; audience: Audience } | null {
+  const [name, key, flags] = args.map((argument) => argument.trim())
+  if (name !== `:${RENDERER_NAME}`) return null
+  if (!key || flags === undefined) return null
+  return { key, audience: parseFlags(flags) }
+}

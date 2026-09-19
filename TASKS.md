@@ -36,7 +36,7 @@ the `cliworker` test graph; harmless, removable whenever.
 ## Phase 3 — Plugin
 
 - [x] **T3.1** Payload store — key → text in one hidden plugin property. Flags stay in the macro so they remain readable in raw text. Parsing throws on corruption rather than reading as empty. `readRawPayload` absorbs the host key-spelling variance in one place. 20 tests.
-- [ ] **T3.2** Register the `:curtain` renderer via `onMacroRendererSlotted`; key `provideUI` on `slot`, never on block uuid, or query blocks render it twice.
+- [x] **T3.2** `:curtain` renderer. `provideUI` keyed on slot, and reveal state is per slot too, since one block can hold several fragments. Concealed markup never carries the payload — asserted in a unit test. Payload is HTML-escaped. A macro whose payload is missing says so rather than rendering blank. 10 tests.
 - [x] **T3.3a** Selection memory + `isSelectionUsable` — 17 tests, written first. Rules 1–3 checked; rule 4 is enforced by construction since `consume()` always clears. Bounds are validated before slicing because `slice()` truncates silently.
 - [x] **T3.3b** `/spoiler`, `/norobots`, `/veil` (slash → node) plus editing-mode shortcuts (→ fragment). Context dispatch was **abandoned**: typing `/` replaces the selection, so it would have silently tagged nodes when the user meant fragments. `/veil` derives from `FLAG_NAMES`, so a third axis is covered without edits. 5 tests for trigger stripping.
 - [ ] **T3.3c** Block context menu items (`registerBlockContextMenuItem`).
@@ -44,7 +44,7 @@ the `cliworker` test graph; harmless, removable whenever.
 - [ ] **T3.3e** Multi-block selection (`getSelectedBlocks`); commands add, never toggle.
 - [ ] **T3.3g** Tag detection by id with caching — `block.tags` returns bare `{ id: N }` refs in DB graphs, so names must be resolved per id. Reading `originalName`/`name` off the ref yields `''` and matches nothing, failing as "no tags" rather than erroring. Use `addBlockTag(blockId, tagId)`; `addTag` does not exist.
 - [ ] **T3.3f** *(deferred)* Un-conceal a fragment — needs plugin support to lift text back out of the payload property.
-- [ ] **T3.4** Reveal-on-click for `spoiler`; `norobots`-only stays visible to the human.
+- [x] **T3.4** Reveal-on-click via `provideModel`. `#norobots` alone renders revealed — only `#spoiler` conceals from the human, which is what makes the two axes independent in practice.
 - [ ] **T3.5** Strip `data-block-title` on concealed blocks (leak surface #2).
 - [ ] **T3.6** Node-level `#spoiler`: query tagged nodes, inject CSS keyed by `blockid` (`.ls-block` carries no tag information).
 
