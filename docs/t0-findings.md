@@ -90,3 +90,48 @@ The asymmetry is now sharp and verified on both sides:
 So hiding a node makes it invisible to its owner while leaving it exposed to anything reading through the CLI — including MCP servers built on it. That reads as a defect, and arguably a privacy one, rather than a deliberate split.
 
 Filed 2026-09-19 as db-test#1237. App and CLI were confirmed to be the same nightly build (`127e3bb-dirty`, base identical to master), so the discrepancy is between two code paths rather than version skew.
+
+---
+
+# T2 findings — the plugin-side questions, both answered yes
+
+Run 2026-09-19 with the plugin loaded in the desktop app against graph `cliworker`, same nightly build (`127e3bb-dirty`).
+
+## T2.1 — a plugin CAN create a hidden property
+
+```ts
+await logseq.Editor.upsertProperty('curtain-probe-payloads', { type: 'string', hide: true })
+```
+
+produces, read back over the CLI:
+
+```clojure
+{:db/ident         :plugin.property.logseq-curtain/curtain-probe-payloads
+ :block/title      "curtain-probe-payloads"
+ :logseq.property/type :string
+ :logseq.property/hide? true          ; ← the question
+ :db/cardinality   :db.cardinality/one}
+```
+
+- `hide: true` in the schema **does** reach `:logseq.property/hide?`, so the payload property stays out of the property area (`components/property/value.cljs:337` skips hidden properties).
+- The ident is `:plugin.property.<plugin-id>/<name>` with the plugin id **unsanitised** — `logseq-curtain` keeps its hyphens.
+
+**The storage model in SPEC §3 stands as written.**
+
+Note that setting `hide?` on the *property definition* is unrelated to setting it on a *node*, which T0 ruled out. This hides a property row in the UI; it does not conceal a node from any reader.
+
+## T2.2 — a plugin CAN reach the host DOM
+
+`window.parent.document` is reachable from the plugin iframe. The probe found `.ls-block[data-block-title]` nodes, overwrote the attribute, confirmed the write, and restored the original:
+
+```
+read 6 block(s); write=true restore=true
+```
+
+**Leak surface #2 is closable from a plugin** (T3.5). Without this, concealment would be defeated for any browser-driving agent regardless of what the renderer does.
+
+## Gotcha — reading `:db/ident` back from `datascriptQuery`
+
+The probe pulled `[:db/ident :block/title :logseq.property/hide?]` and found the hide flag under `logseq.property/hide?`, but found the ident under **neither** `db/ident` nor `:db/ident` — it reported `(no ident)` while the CLI showed the ident present on the entity.
+
+`datascriptQuery` normalises keys on the host side and the namespace is stripped for common attributes, so the key is most likely plain `ident` (**suspected** — not retested). Any code reading idents out of `datascriptQuery` results should probe several key spellings rather than assume one.

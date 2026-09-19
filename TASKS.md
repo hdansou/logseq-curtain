@@ -25,14 +25,13 @@ so they cannot run until this phase exists.
 
 ## Phase 2 — Host probes (need a loadable plugin)
 
-Probe code is written and builds; both are awaiting a run in the app. Results
-are written to a `Curtain-Probe-Results` page in the graph as well as the
-console, so they can be read back over the CLI. Probes are experiments, not
-TDD units — there is no meaningful failing test for "what does the host do?" —
-and `src/probes.ts` is deleted once both answers land in docs/t0-findings.md.
+Both answered **yes**; results are in [docs/t0-findings.md](docs/t0-findings.md).
+`src/probes.ts` has been deleted as planned — git history holds it. A stray
+`curtain-probe-payloads` property and a `Curtain-Probe-Results` page remain in
+the `cliworker` test graph; harmless, removable whenever.
 
-- [ ] **T2.1** Does `upsertProperty(…, { hide: true })` set `:logseq.property/hide?` on a plugin property? If not, the payload property renders as a visible row and needs another way to stay out of sight.
-- [ ] **T2.2** Can a plugin reach `parent.document`? If not, T3.5 is impossible and leak surface #2 stays open permanently — the one that defeats the premise against browser-driving agents.
+- [x] **T2.1** **YES.** `upsertProperty({ hide: true })` sets `:logseq.property/hide?`; ident is `:plugin.property.logseq-curtain/<name>` (plugin id unsanitised). Storage model in SPEC §3 stands.
+- [x] **T2.2** **YES.** `window.parent.document` is reachable; read 6 blocks, wrote and restored `data-block-title`. Leak surface #2 is closable (T3.5).
 
 ## Phase 3 — Plugin
 
