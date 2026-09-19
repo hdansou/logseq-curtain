@@ -25,6 +25,12 @@ so they cannot run until this phase exists.
 
 ## Phase 2 — Host probes (need a loadable plugin)
 
+Probe code is written and builds; both are awaiting a run in the app. Results
+are written to a `Curtain-Probe-Results` page in the graph as well as the
+console, so they can be read back over the CLI. Probes are experiments, not
+TDD units — there is no meaningful failing test for "what does the host do?" —
+and `src/probes.ts` is deleted once both answers land in docs/t0-findings.md.
+
 - [ ] **T2.1** Does `upsertProperty(…, { hide: true })` set `:logseq.property/hide?` on a plugin property? If not, the payload property renders as a visible row and needs another way to stay out of sight.
 - [ ] **T2.2** Can a plugin reach `parent.document`? If not, T3.5 is impossible and leak surface #2 stays open permanently — the one that defeats the premise against browser-driving agents.
 
