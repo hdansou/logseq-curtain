@@ -20,7 +20,7 @@ so they cannot run until this phase exists.
 
 - [x] **T1.1** Scaffold — vite + `vite-plugin-logseq`, TS, vitest, `@logseq/libs` ^0.3.2. *Notes: vitest needs its own config (`vite-plugin-logseq` fails at `buildStart` under the runner); pnpm 11 needs `pnpm approve-builds esbuild`.*
 - [x] **T1.2** Freeze the vocabulary — `src/flags.ts` is the single source. `FLAG_NAMES` drives both the node tags and the macro flags, so they cannot drift. Parsing throws on unknown or duplicate flags: a typo must not degrade to "conceal from nobody", since over-concealing is recoverable and leaking is not. 10 tests, written first.
-- [ ] **T1.3** Key format — short base36 per block (`k7`, `m3`); collisions only matter inside one block's payload map. Needs a test + generator.
+- [x] **T1.3** Key format — short base36, unique within a block only, so keys stay short enough to read in raw text. Length grows if a crowded block keeps colliding. Delivered with the payload store.
 - [ ] **T1.4** Write `NOROBOTS.md`, the portable contract agents are pointed at.
 
 ## Phase 2 — Host probes (need a loadable plugin)
@@ -63,7 +63,6 @@ the `cliworker` test graph; harmless, removable whenever.
 - [x] **T3.8** Hover-reveal stays on by default — it is the right everyday behaviour — with two ways to stop an accidental reveal: a setting, and a **`Curtain: lock`** palette command that re-conceals everything revealed this session and disables both hover *and* click until unlocked. The lock exists because the need is momentary (about to share a screen) and hunting through plugin settings at that moment is friction in the wrong place. Reveal state is session-only, never written to the graph.
 - [x] **T3.9** `Curtain: copy with concealed text` — restores payloads into the copied text and leaves the graph untouched, so a concealed block can be shared alongside ordinary ones. Same `revealFragments` as un-conceal, written to the clipboard rather than the graph, so the two cannot drift.
 - [x] **T3.10** **Verified: EDN export does not lose concealed text.** Both `:graph` and `:graph-human` exports of a graph with concealed fragments preserve the payload property *and* the macro. Concealing never destroys data at the graph level.
-- [ ] ~~**T3.9 (original)** Copying a concealed fragment.~~ `{{renderer :curtain, k7}}` copies as the macro, not the text, which is a real defect. **Storing the text in the macro is not the fix** — E2E-03 passes precisely because the payload is not in `:block/title`, and reversing that reopens seven leak surfaces plus the comma-mangling bug. `onBeforeCommandInvoked('logseq.editor/copy')` is a notification hook with no way to rewrite the clipboard, so interception is out. Options: a "copy with concealed text" command writing to the clipboard directly, or T3.3f un-conceal then copy natively.
 
 ## Phase 4 — Agent-side enforcement
 
