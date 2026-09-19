@@ -3,6 +3,7 @@ import { parseFlags } from './flags'
 import {
   findMacroKeys,
   formatMacro,
+  insertMacroAtTrigger,
   parseMacro,
   parseMacroArguments,
   spliceMacro,
@@ -181,5 +182,38 @@ describe('findMacroKeys', () => {
   // fully parsed must still protect its payload rather than orphan it.
   it('still finds the key when the flags are unparseable', () => {
     expect(findMacroKeys('{{renderer :curtain, k7, sploiler}}')).toEqual(['k7'])
+  })
+})
+
+describe('insertMacroAtTrigger', () => {
+  const FLAGS = 'spoiler norobots'
+
+  it('replaces the typed trigger with an empty macro', () => {
+    const result = insertMacroAtTrigger('some text /conceal', 'conceal', FLAGS)
+    expect(result?.content).toBe('some text {{renderer :curtain, , spoiler norobots}}')
+  })
+
+  it('places the cursor in the empty reference slot', () => {
+    const result = insertMacroAtTrigger('some text /conceal', 'conceal', FLAGS)
+    // Typing at that position must land between the commas.
+    const typed =
+      result!.content.slice(0, result!.cursor) + 'secret' + result!.content.slice(result!.cursor)
+    expect(typed).toBe('some text {{renderer :curtain, secret, spoiler norobots}}')
+  })
+
+  it('works when the trigger is the whole block', () => {
+    const result = insertMacroAtTrigger('/conceal', 'conceal', FLAGS)
+    expect(result?.content).toBe('{{renderer :curtain, , spoiler norobots}}')
+    const typed =
+      result!.content.slice(0, result!.cursor) + 'x' + result!.content.slice(result!.cursor)
+    expect(typed).toBe('{{renderer :curtain, x, spoiler norobots}}')
+  })
+
+  it('returns null when the trigger is not at the end', () => {
+    expect(insertMacroAtTrigger('talk about /conceal in prose', 'conceal', FLAGS)).toBeNull()
+  })
+
+  it('returns null when the trigger is absent', () => {
+    expect(insertMacroAtTrigger('some text', 'conceal', FLAGS)).toBeNull()
   })
 })

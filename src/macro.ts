@@ -116,3 +116,30 @@ export function splitMacroBody(body: string): { reference: string; flags: string
   if (lastComma === -1) return null
   return { reference: body.slice(0, lastComma).trim(), flags: body.slice(lastComma + 1).trim() }
 }
+
+/**
+ * Replace a typed `/trigger` with an empty macro, and say where the cursor goes.
+ *
+ * For concealing text that has not been written yet, where there is nothing to
+ * select. The reference slot is left empty rather than pre-filled: there is no
+ * API to *select* inserted text, only to place a caret, so a placeholder would
+ * have to be deleted by hand before typing over it.
+ *
+ * Returns null unless the trigger is at the end, so a block merely discussing
+ * `/conceal` is untouched.
+ */
+export function insertMacroAtTrigger(
+  content: string,
+  trigger: string,
+  flags: string,
+): { content: string; cursor: number } | null {
+  const suffix = `/${trigger}`
+  if (!content.endsWith(suffix)) return null
+
+  const before = content.slice(0, -suffix.length)
+  const opening = `{{renderer :${RENDERER_NAME}, `
+  return {
+    content: `${before}${opening}, ${flags}}}`,
+    cursor: before.length + opening.length,
+  }
+}

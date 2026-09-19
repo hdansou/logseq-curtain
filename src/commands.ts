@@ -1,5 +1,5 @@
-import { FLAG_NAMES, parseFlags, type Audience } from './flags'
-import { formatMacro, spliceMacro, stripSlashTrigger } from './macro'
+import { FLAG_NAMES, formatFlags, parseFlags, type Audience } from './flags'
+import { formatMacro, insertMacroAtTrigger, spliceMacro, stripSlashTrigger } from './macro'
 import { collectPayloads, newKey, putPayload, revealFragments } from './payloads'
 import { extractInlineFragments, inlineFragments } from './inline'
 import { createSelectionMemory } from './selection'
@@ -230,7 +230,33 @@ async function copyRevealed(): Promise<void> {
   }
 }
 
+/**
+ * Insert an empty curtain and put the cursor inside it.
+ *
+ * Covers the case the palette command cannot: concealing text that has not
+ * been written yet, where there is no selection to act on.
+ *
+ * This necessarily produces an *inline* fragment — the text is typed into the
+ * macro, so there is nothing to store under a key yet. Converting it to a
+ * property afterwards is one command.
+ */
+async function concealAtCursor(): Promise<void> {
+  const blockUuid = await editingBlock()
+  if (blockUuid === null) return
+
+  const content = await logseq.Editor.getEditingBlockContent()
+  const inserted = insertMacroAtTrigger(content, 'conceal', formatFlags(AUDIENCES.veil))
+  if (inserted === null) return
+
+  await logseq.Editor.updateBlock(blockUuid, inserted.content)
+  // Re-enter editing at the empty reference slot, so typing lands inside the
+  // macro rather than after it.
+  await logseq.Editor.editBlock(blockUuid, { pos: inserted.cursor })
+}
+
 export function registerCommands(): void {
+  logseq.Editor.registerSlashCommand('conceal', () => concealAtCursor())
+
   logseq.Editor.onInputSelectionEnd(async (event) => {
     const blockUuid = await editingBlock()
     if (blockUuid === null) return

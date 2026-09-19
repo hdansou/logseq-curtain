@@ -23,6 +23,7 @@ Inline fragments use the same two flags:
 |---|---|
 | Tag a whole node | `/spoiler`, `/norobots`, `/veil` while editing |
 | Conceal selected text | select it, then run **Curtain: conceal selected text** from the command palette |
+| Conceal text you have not written yet | `/conceal` — inserts an empty curtain with the cursor inside it |
 
 A slash command cannot conceal a selection: typing `/` *replaces* the selected
 text, so there is nothing left to act on. The palette does not type into the
