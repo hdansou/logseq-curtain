@@ -35,9 +35,14 @@ the `cliworker` test graph; harmless, removable whenever.
 
 ## Phase 3 — Plugin
 
-- [ ] **T3.1** Payload store: one hidden plugin property per block, JSON map of key → text.
+- [x] **T3.1** Payload store — key → text in one hidden plugin property. Flags stay in the macro so they remain readable in raw text. Parsing throws on corruption rather than reading as empty. `readRawPayload` absorbs the host key-spelling variance in one place. 20 tests.
 - [ ] **T3.2** Register the `:curtain` renderer via `onMacroRendererSlotted`; key `provideUI` on `slot`, never on block uuid, or query blocks render it twice.
-- [ ] **T3.3** `/curtain` slash command: lift the selected text into the payload property, leave the macro behind.
+- [ ] **T3.3a** Selection tracking + `isSelectionUsable` predicate — **pure, TDD**. All four staleness rules (SPEC §6a) live here so the risk is tested, not scattered.
+- [ ] **T3.3b** `/spoiler` and `/norobots` slash commands with fragment-or-node dispatch.
+- [ ] **T3.3c** Block context menu items (`registerBlockContextMenuItem`).
+- [ ] **T3.3d** Page menu items (`registerPageMenuItem`) — needed for the page/journal half of the scope.
+- [ ] **T3.3e** Multi-block selection (`getSelectedBlocks`); commands add, never toggle.
+- [ ] **T3.3f** *(deferred)* Un-conceal a fragment — needs plugin support to lift text back out of the payload property.
 - [ ] **T3.4** Reveal-on-click for `spoiler`; `norobots`-only stays visible to the human.
 - [ ] **T3.5** Strip `data-block-title` on concealed blocks (leak surface #2).
 - [ ] **T3.6** Node-level `#spoiler`: query tagged nodes, inject CSS keyed by `blockid` (`.ls-block` carries no tag information).

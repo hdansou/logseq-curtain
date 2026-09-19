@@ -142,6 +142,67 @@ Constraints that shape it, all verified:
 
 Everything past the editor — search results, breadcrumbs, graph labels — is reachable only through CSS plus a `MutationObserver` on `parent.document`. That is fragile by construction: an upstream class rename breaks it **silently**. Hence the per-surface tests.
 
+## 6a. Commands
+
+Two commands, one per axis: `/spoiler` and `/norobots`. Combining them means
+running both, exactly as `#spoiler #norobots` combine on a node. Adding a third
+axis later costs one command, not a new row in a combination table.
+
+Both commands **add**; they never toggle. Logseq already removes a tag through
+its own UI, so a toggle would duplicate that and introduce partial-state
+questions across multi-block selections. Un-concealing a *fragment* does need
+plugin support (the text must come back out of the payload property) and is
+deferred to its own command.
+
+### Dispatch: fragment or node?
+
+Each command asks one question — is there a **valid remembered selection in the
+block being edited?** If yes it conceals that fragment; if no it tags the node.
+
+```
+/spoiler  ├─ valid selection in the editing block → conceal that fragment
+          └─ otherwise                            → tag the node
+```
+
+### The remembered selection
+
+There is no "get current selection" API. `Editor.onInputSelectionEnd` is an
+*event* carrying `{ start, end, text }`, and `BlockCursorPosition` exposes only
+a caret offset with no range. So the plugin must remember the last selection
+and act on it later, which means it can go stale.
+
+All staleness rules live in one **pure predicate**, so the risk is tested
+rather than scattered through event handlers:
+
+```ts
+isSelectionUsable(remembered, { blockUuid, content, now }): boolean
+```
+
+A remembered selection is discarded when:
+
+| # | Condition | Why |
+|---|---|---|
+| 1 | Its block is not the block being edited | the user moved on |
+| 2 | `content.slice(start, end) !== text` | the user edited; offsets no longer mean what they meant |
+| 3 | Older than the staleness window | a selection from minutes ago is not an intent |
+| 4 | It has already been used | never conceal the same range twice |
+
+Rule 2 is the load-bearing one: it catches every edit without needing to
+observe the edit, because it re-derives the truth from current content.
+
+### Entry points
+
+| Surface | API | Scope |
+|---|---|---|
+| Slash command | `registerSlashCommand` + `checkEditing` | fragment or current block |
+| Block context menu | `registerBlockContextMenuItem` | that block |
+| Page menu | `registerPageMenuItem` | that page |
+| Multi-block selection | `getSelectedBlocks` | every selected block |
+
+There is no native text prompt — only `showMsg` — so any future input UI has
+to be built with `provideUI`. The remembered-selection design avoids needing
+one at all, which is a large part of its appeal.
+
 ## 7. Agent-side enforcement
 
 **MCP filter (real).** In `logseq-headless-mcp`, before results leave the server: drop nodes tagged `#norobots` and those inheriting it; strip `payloads` entries whose flags include `norobots`; replace concealed fragments with a marker so the model knows something was withheld rather than seeing a malformed sentence.
