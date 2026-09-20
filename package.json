@@ -10,7 +10,7 @@
   },
   "logseq": {
     "id": "logseq-curtain",
-    "title": "Curtain \u2014 Hide & Redact",
+    "title": "Curtain - Hide & Redact",
     "icon": "./icon.png",
     "main": "dist/index.html",
     "supportsDBOnly": true

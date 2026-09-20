@@ -1,4 +1,4 @@
-# Curtain — Hide & Redact
+# Curtain - Hide & Redact
 
 Conceal parts of a Logseq DB graph along two independent axes: from **human eyes** in the app, and from **AI agents** reading the graph through the CLI, MCP or browser automation.
 
