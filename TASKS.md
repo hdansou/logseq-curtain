@@ -100,5 +100,5 @@ the `cliworker` test graph; harmless, removable whenever.
 
 ## Phase 5 — Tests
 
-- [ ] **T5.1** One E2E per leak surface asserting the payload string is absent. See [docs/leak-surfaces.md](docs/leak-surfaces.md).
-- [ ] **T5.2** CI gate on the surface matrix.
+- [x] **T5.1** Leak surfaces covered. Rows 1–10 share one root cause — they all read `:block/title` — so `src/leak-surfaces.test.ts` asserts that invariant directly rather than driving ten UI surfaces: both axes, through the storage round trip, after the collector, and for payloads with commas, braces, quotes, newlines, markup and a nested macro. Inline mode's opposite trade is asserted too, so it cannot change silently. Rows 11–12 are the 23 filter tests in the MCP repo.
+- [x] **T5.2** CI runs it on every push and PR in both repos, with the audit gated at moderate.

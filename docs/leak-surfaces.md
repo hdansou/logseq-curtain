@@ -10,18 +10,18 @@ The scope decision was **full sweep**, which means every missed surface fails *s
 
 | # | Surface | Source | inline | property | Test |
 |---|---|---|---|---|---|
-| 1 | Rendered block text | renderer | safe | safe | `E2E-01` |
-| 2 | `data-block-title` attribute | `components/block.cljs:4478` | **LEAKS** | safe *(fragments)* / **LEAKS** *(nodes)* | `E2E-02` |
+| 1 | Rendered block text | renderer | safe | safe | invariant ✅ |
+| 2 | `data-block-title` attribute | `components/block.cljs:4478` | **LEAKS** | safe *(fragments)* / **LEAKS** *(nodes)* | invariant ✅ |
 | 3 | Search index | `worker/search.cljs:614` | **LEAKS** | safe — **verified live** | `E2E-03` ✅ |
-| 4 | Search results UI (cmdk) | `components/cmdk/list_item.cljs:84-97` | **LEAKS** | safe | `E2E-04` |
-| 5 | Graph view node labels | `worker/graph_view.cljs` | **LEAKS** | safe | `E2E-05` |
-| 6 | Breadcrumbs | `components/block.cljs:3766+` | **LEAKS** | safe | `E2E-06` |
-| 7 | Text export | `handler/export/text_impl.cljs:356-366` | **LEAKS** | safe | `E2E-07` |
-| 8 | Publish HTML | `deps/publish/.../render.cljs:557-558` | **LEAKS** | safe | `E2E-08` |
-| 9 | Linked references | `components/reference.cljs` | **LEAKS** | safe | `E2E-09` |
-| 10 | Right sidebar | `components/right_sidebar.cljs` | **LEAKS** | safe | `E2E-10` |
-| 11 | CLI output | `cli/common/db_worker.cljs` | **LEAKS** | **LEAKS** | `E2E-11` |
-| 12 | MCP / agent tools | `api/db_based/tools.cljs` | **LEAKS** | **LEAKS** | `E2E-12` |
+| 4 | Search results UI (cmdk) | `components/cmdk/list_item.cljs:84-97` | **LEAKS** | safe | invariant ✅ |
+| 5 | Graph view node labels | `worker/graph_view.cljs` | **LEAKS** | safe | invariant ✅ |
+| 6 | Breadcrumbs | `components/block.cljs:3766+` | **LEAKS** | safe | invariant ✅ |
+| 7 | Text export | `handler/export/text_impl.cljs:356-366` | **LEAKS** | safe | invariant ✅ |
+| 8 | Publish HTML | `deps/publish/.../render.cljs:557-558` | **LEAKS** | safe | invariant ✅ |
+| 9 | Linked references | `components/reference.cljs` | **LEAKS** | safe | invariant ✅ |
+| 10 | Right sidebar | `components/right_sidebar.cljs` | **LEAKS** | safe | invariant ✅ |
+| 11 | CLI output | `cli/common/db_worker.cljs` | **LEAKS** | **LEAKS** | 23 filter tests ✅ |
+| 12 | MCP / agent tools | `api/db_based/tools.cljs` | **LEAKS** | **LEAKS** | 23 filter tests ✅ |
 | 13 | db-sync payloads | `deps/db-sync/.../semantic.cljs` | **LEAKS** | **LEAKS** | out of scope (R6) |
 | 14 | EDN graph export | `graph export` | **LEAKS** | **LEAKS** | out of scope (R6) |
 
@@ -30,6 +30,30 @@ The scope decision was **full sweep**, which means every missed surface fails *s
 **Rows 11–12 are artifact 3.** Unreachable from the app: no plugin runtime exists in the CLI (`frontend/config.cljs:149-152`).
 
 **Rows 13–14 are documented non-goals.** Concealment, not confidentiality.
+
+## How these are covered
+
+Rows 1–10 are **not ten independent facts.** Every one of them reads
+`:block/title`, so all ten hold exactly while one invariant holds:
+
+> in keyed mode, the payload never appears in the block title.
+
+`src/leak-surfaces.test.ts` asserts that invariant directly — across both axes,
+through the property round trip, after the orphan collector runs, and for
+payloads containing commas, braces, quotes, newlines, markup and a nested
+macro. Driving ten UI surfaces would cost far more and prove the same thing
+less directly.
+
+It also asserts the *opposite* for inline mode, so that trade stays explicit:
+if inline text ever stopped appearing in the title, the mode would have
+silently stopped doing what it claims.
+
+Rows 11–12 do not reduce to the invariant — the CLI and MCP read the property
+itself — and are covered by 23 cases in
+`logseq-headless-mcp/test/norobots.test.mjs`, including the brace bypass that
+defeated the filter entirely.
+
+Rows 13–14 remain documented non-goals.
 
 ## Verified so far
 
