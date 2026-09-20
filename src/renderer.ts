@@ -1,6 +1,7 @@
 import type { Audience } from './flags'
 import { parseMacroArguments } from './macro'
 import { renderCurtain } from './render'
+import { resolveReference } from './payloads'
 import { readPayloads } from './store'
 
 /**
@@ -32,9 +33,8 @@ async function paint(slot: string): Promise<void> {
 
   const payloads = await readPayloads(context.blockUuid)
 
-  // The reference is a payload key in keyed mode, or the concealed text itself
-  // in inline mode. A key that resolves wins; anything else is literal text.
-  const text = payloads[context.reference] ?? context.reference
+  // A payload key in keyed mode, the text itself in inline mode.
+  const text = resolveReference(payloads, context.reference)
 
   const template = renderCurtain({
     slot,

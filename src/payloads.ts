@@ -169,3 +169,18 @@ export function revealFragments(
   }
   return { title: restored, payloads: remaining }
 }
+
+/**
+ * Resolve a macro's reference to the text it stands for.
+ *
+ * A key names a payload; anything else is already the text (inline mode).
+ *
+ * Checks for an *own* string rather than indexing directly. A plain lookup
+ * reaches the prototype chain, so a reference of `constructor` or `__proto__`
+ * resolved to a function or an object and then threw when escaped as text.
+ */
+export function resolveReference(payloads: PayloadMap, reference: string): string {
+  if (!Object.prototype.hasOwnProperty.call(payloads, reference)) return reference
+  const stored = payloads[reference]
+  return typeof stored === 'string' ? stored : reference
+}

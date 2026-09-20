@@ -6,6 +6,7 @@ import {
   putPayload,
   readRawPayload,
   removePayload,
+  resolveReference,
   revealFragments,
   serialisePayloads,
 } from './payloads'
@@ -245,5 +246,28 @@ describe('revealFragments — inline mode', () => {
   it('still drops only the payloads it used', () => {
     const result = revealFragments('{{renderer :curtain, inline, spoiler}}', { k7: 'kept' })
     expect(result.payloads).toEqual({ k7: 'kept' })
+  })
+})
+
+describe('resolveReference', () => {
+  it('resolves a key to its stored text', () => {
+    expect(resolveReference({ k7: 'stored' }, 'k7')).toBe('stored')
+  })
+
+  it('returns the reference itself when it names no payload (inline mode)', () => {
+    expect(resolveReference({}, 'humans and robots')).toBe('humans and robots')
+  })
+
+  // A plain object lookup reaches the prototype chain, so these references
+  // returned Object.prototype and a function respectively — which then threw
+  // when escaped as text. Only own string values count.
+  it('does not resolve through the prototype chain', () => {
+    for (const inherited of ['__proto__', 'constructor', 'toString', 'valueOf']) {
+      expect(resolveReference({}, inherited)).toBe(inherited)
+    }
+  })
+
+  it('ignores an own value that is not a string', () => {
+    expect(resolveReference({ k7: 42 } as unknown as Record<string, string>, 'k7')).toBe('k7')
   })
 })
