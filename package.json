@@ -1,7 +1,7 @@
 {
   "name": "logseq-curtain",
   "version": "1.0.0",
-  "description": "Conceal parts of a Logseq DB graph from human eyes, from AI agents, or from both.",
+  "description": "Hide spoilers from view and redact notes from AI agents. Blur or conceal any block, page or selected text, and mark content so AI assistants reading your graph skip it.",
   "main": "dist/index.html",
   "scripts": {
     "dev": "vite build --watch",
@@ -10,7 +10,7 @@
   },
   "logseq": {
     "id": "logseq-curtain",
-    "title": "Curtain",
+    "title": "Curtain \u2014 Hide & Redact",
     "icon": "./icon.png",
     "main": "dist/index.html",
     "supportsDBOnly": true
@@ -33,11 +33,18 @@
   "keywords": [
     "logseq",
     "logseq-plugin",
-    "privacy",
+    "hide",
+    "conceal",
+    "blur",
+    "redact",
     "spoiler",
+    "privacy",
     "ai",
-    "agents",
-    "concealment"
+    "agent",
+    "llm",
+    "mcp",
+    "screenshare",
+    "presentation"
   ],
   "packageManager": "pnpm@11.20.0"
 }
