@@ -96,7 +96,7 @@ the `cliworker` test graph; harmless, removable whenever.
 - [x] **T4.1** MCP filter — shipped in `logseq-headless-mcp` as an injectable pass at `src/server.mjs`, after `resolveRefs` and before `capResponse`, covering all eight tools. Unlike its neighbours it **fails closed**: those degrade open because they are presentation, and this one is the only thing between marked content and the model. Withholds the payload property, `norobots` macros and tagged nodes with inheritance. Still does **not** cover tool error text or the worker-side filtering `get_backlinks` inherits.
 - [x] **T4.1a** Paging hazard — results now report how many items were withheld, so a short list cannot be mistaken for a short result set.
 - [x] **T4.2** [`agent/`](agent/) — a self-contained skill whose description triggers *before* the first graph read (afterwards is too late to avoid retrieval), a paste-able `CLAUDE.md`/`AGENTS.md` block, and the option of putting `NOROBOTS.md` in the graph root. The skill repeats the rule rather than linking it, because an agent may never fetch the other file.
-- [ ] **T4.3** CLI wrapper `--respect-norobots`.
+- [~] **T4.3** ~~CLI wrapper~~ — **parked, to be proposed upstream.** A wrapper would close the CLI path only for whoever remembered to call it, implying more than it delivers; the same flag in the official CLI would cover every agent reading any graph. Drafted in [docs/upstream-cli-proposal.md](docs/upstream-cli-proposal.md). Routes to Discord `#db-feedback`, not a `db-test` issue — that repo disables blank issues for feature requests.
 
 ## Phase 5 — Tests
 
