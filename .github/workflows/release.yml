@@ -20,7 +20,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # pnpm 11 requires >= 22.13, and Node 20 is deprecated on runners.
+          node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
