@@ -17,6 +17,18 @@ Inline fragments use the same two flags:
 {{renderer :curtain, k7, spoiler norobots}}
 ```
 
+
+![Inline fragments concealed in a block, a whole block blurred, and a concealed page in the sidebar](assets/screenshots/inline-and-nodes.png)
+
+Three inline fragments, each tinted by which axis applies — grey for `#spoiler`,
+tinted for `#norobots`, tinted with an edge for both. The block under **B** is
+blurred whole; the one under **C** carries `#norobots`, so it stays readable to
+you and is withheld from agents. The sidebar shows a concealed page.
+
+![A page tagged #spoiler, with its title and every block blurred](assets/screenshots/page-concealed.png)
+
+Tagging a page covers its title and everything written on it, at any depth.
+
 ## Using it
 
 | Action | How |
